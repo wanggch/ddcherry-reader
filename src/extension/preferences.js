@@ -4,7 +4,8 @@ export const DEFAULT_PREFERENCES = Object.freeze({
   toc: true,
   tocPosition: 'left',
   autoRefresh: false,
-  rawMode: false
+  rawMode: false,
+  fontSize: 16
 });
 
 const SUPPORTED_KEYS = new Set(Object.keys(DEFAULT_PREFERENCES));

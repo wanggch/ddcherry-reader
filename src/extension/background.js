@@ -14,3 +14,12 @@ runtime?.onInstalled?.addListener(async ({ reason }) => {
     ...existing
   });
 });
+
+runtime?.onMessage?.addListener?.((message, _sender, sendResponse) => {
+  if (message?.action === 'openOptionsPage') {
+    runtime?.openOptionsPage?.();
+    sendResponse?.({ success: true });
+    return true;
+  }
+  return false;
+});

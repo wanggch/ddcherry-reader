@@ -3,7 +3,31 @@ const THEME_STYLES = {
     github: 'assets/github-markdown-light.css',
     highlight: 'assets/highlight-github.css'
   },
+  paper: {
+    github: 'assets/github-markdown-light.css',
+    highlight: 'assets/highlight-github.css'
+  },
+  mint: {
+    github: 'assets/github-markdown-light.css',
+    highlight: 'assets/highlight-github.css'
+  },
+  vue: {
+    github: 'assets/github-markdown-light.css',
+    highlight: 'assets/highlight-github.css'
+  },
   dark: {
+    github: 'assets/github-markdown-dark.css',
+    highlight: 'assets/highlight-github-dark.css'
+  },
+  night: {
+    github: 'assets/github-markdown-dark.css',
+    highlight: 'assets/highlight-github-dark.css'
+  },
+  purple: {
+    github: 'assets/github-markdown-dark.css',
+    highlight: 'assets/highlight-github-dark.css'
+  },
+  black: {
     github: 'assets/github-markdown-dark.css',
     highlight: 'assets/highlight-github-dark.css'
   }
@@ -21,8 +45,10 @@ const LEGACY_THEME_LINK_IDS = [
   'md-reader-highlight-dark'
 ];
 
+const DARK_THEMES = new Set(['dark', 'night', 'purple', 'black']);
+
 export function ensureThemeStyles(theme, doc = document, runtimeGetURL = getRuntimeUrl) {
-  const normalizedTheme = theme === 'dark' ? 'dark' : 'light';
+  const normalizedTheme = DARK_THEMES.has(theme) ? 'dark' : 'light';
   const assets = THEME_STYLES[normalizedTheme];
 
   removeLegacyThemeLinks(doc);
