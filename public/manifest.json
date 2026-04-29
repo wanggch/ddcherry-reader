@@ -5,14 +5,14 @@
   "description": "__MSG_extensionDescription__",
   "default_locale": "zh_CN",
   "permissions": ["storage"],
-  "host_permissions": ["file:///*"],
+  "host_permissions": ["file:///*", "http://*/*", "https://*/*"],
   "background": {
     "service_worker": "assets/background.js",
     "type": "module"
   },
   "content_scripts": [
     {
-      "matches": ["file:///*"],
+      "matches": ["file:///*", "http://*/*", "https://*/*"],
       "js": ["assets/contentScript.js"],
       "run_at": "document_idle"
     }
@@ -24,7 +24,7 @@
   "web_accessible_resources": [
     {
       "resources": ["assets/*"],
-      "matches": ["file:///*"]
+      "matches": ["file:///*", "http://*/*", "https://*/*"]
     }
   ]
 }

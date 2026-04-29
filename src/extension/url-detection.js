@@ -1,4 +1,4 @@
-const SUPPORTED_PROTOCOLS = new Set(['file:']);
+const SUPPORTED_PROTOCOLS = new Set(['file:', 'http:', 'https:']);
 const MARKDOWN_EXTENSIONS = new Set(['.md', '.markdown', '.mkd', '.mdx', '.txt']);
 
 export function isMarkdownUrl(url) {

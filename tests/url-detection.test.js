@@ -7,7 +7,9 @@ describe('isMarkdownUrl', () => {
     ['file:///C:/docs/spec.markdown'],
     ['file:///Users/me/notes.mkd'],
     ['file:///Users/me/guide.mdx'],
-    ['file:///Users/me/plain.txt']
+    ['file:///Users/me/plain.txt'],
+    ['https://example.com/readme.md'],
+    ['http://example.com/readme.md']
   ])('accepts supported Markdown-like URLs: %s', (url) => {
     expect(isMarkdownUrl(url)).toBe(true);
   });
@@ -16,9 +18,7 @@ describe('isMarkdownUrl', () => {
     ['file:///Users/me/index.html'],
     ['chrome://extensions'],
     ['about:blank'],
-    ['file:///Users/me/readme.md/image.png'],
-    ['https://example.com/readme.md'],
-    ['http://example.com/readme.md']
+    ['file:///Users/me/readme.md/image.png']
   ])('rejects non-Markdown URLs: %s', (url) => {
     expect(isMarkdownUrl(url)).toBe(false);
   });

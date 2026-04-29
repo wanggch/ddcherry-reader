@@ -3,9 +3,15 @@
   --options-bg: #f6f8fa;
   --options-panel: #ffffff;
   --options-border: #d0d7de;
+  --options-border-subtle: #e6e9f0;
   --options-text: #1f2328;
   --options-muted: #59636e;
   --options-accent: #0969da;
+  --options-accent-soft: rgba(9, 105, 218, 0.08);
+  --options-shadow: 0 1px 3px rgba(31, 35, 40, 0.04), 0 8px 24px rgba(31, 35, 40, 0.08);
+  --options-radius: 10px;
+  --options-radius-sm: 6px;
+  --options-transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -13,9 +19,12 @@
     --options-bg: #0d1117;
     --options-panel: #161b22;
     --options-border: #30363d;
+    --options-border-subtle: #21262d;
     --options-text: #e6edf3;
     --options-muted: #8b949e;
     --options-accent: #2f81f7;
+    --options-accent-soft: rgba(47, 129, 247, 0.12);
+    --options-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -23,76 +32,141 @@ body {
   margin: 0;
   background: var(--options-bg);
   color: var(--options-text);
-  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 main {
-  max-width: 760px;
-  margin: 40px auto;
-  padding: 0 20px;
+  max-width: 720px;
+  margin: 48px auto;
+  padding: 0 24px;
 }
 
 h1 {
-  margin-bottom: 6px;
-  font-size: 28px;
+  margin-bottom: 8px;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .description {
-  margin: 0 0 24px;
+  margin: 0 0 28px;
   color: var(--options-muted);
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 form {
   display: grid;
-  gap: 16px;
+  gap: 20px;
 }
 
 fieldset {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   margin: 0;
-  padding: 20px;
+  padding: 24px;
   border: 1px solid var(--options-border);
-  border-radius: 8px;
+  border-radius: var(--options-radius);
   background: var(--options-panel);
+  box-shadow: var(--options-shadow);
+  transition: box-shadow var(--options-transition);
+}
+
+fieldset:focus-within {
+  box-shadow: 0 0 0 3px var(--options-accent-soft), var(--options-shadow);
 }
 
 legend {
-  padding: 0 8px;
+  padding: 0 10px;
   font-weight: 700;
+  font-size: 14px;
+  color: var(--options-text);
 }
 
 label {
   display: grid;
   gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--options-text);
+  cursor: pointer;
 }
 
 .checkbox-label {
   display: flex;
   align-items: center;
   gap: 10px;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--options-accent);
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 select {
-  max-width: 260px;
-  min-height: 34px;
-  padding: 4px 8px;
+  max-width: 280px;
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 1px solid var(--options-border);
+  border-radius: var(--options-radius-sm);
+  background: var(--options-bg);
+  color: var(--options-text);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color var(--options-transition), box-shadow var(--options-transition);
+  outline: none;
+}
+
+select:hover {
+  border-color: var(--options-accent);
+}
+
+select:focus-visible {
+  border-color: var(--options-accent);
+  box-shadow: 0 0 0 3px var(--options-accent-soft);
 }
 
 .actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 4px;
 }
 
 button {
-  min-height: 36px;
-  padding: 0 14px;
+  min-height: 38px;
+  padding: 0 16px;
   border: 1px solid var(--options-border);
-  border-radius: 6px;
+  border-radius: var(--options-radius-sm);
   background: var(--options-panel);
   color: var(--options-text);
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all var(--options-transition);
+  user-select: none;
+}
+
+button:hover {
+  border-color: var(--options-accent);
+  color: var(--options-accent);
+  background: var(--options-accent-soft);
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--options-accent);
+  outline-offset: 2px;
 }
 
 button[type='submit'] {
@@ -101,6 +175,35 @@ button[type='submit'] {
   color: #ffffff;
 }
 
+button[type='submit']:hover {
+  background: color-mix(in srgb, var(--options-accent) 88%, black);
+  border-color: color-mix(in srgb, var(--options-accent) 88%, black);
+  color: #ffffff;
+}
+
+button[type='reset'] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--options-muted);
+}
+
+button[type='reset']:hover {
+  color: var(--options-text);
+  background: var(--options-border-subtle);
+}
+
 #status {
   color: var(--options-muted);
+  font-size: 13px;
+  min-height: 20px;
+  transition: opacity var(--options-transition);
+}
+
+#status:not(:empty) {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }

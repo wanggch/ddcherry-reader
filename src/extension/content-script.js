@@ -1,5 +1,5 @@
+import { preparedMarkdownDocument } from './compat-fix.js';
 import mermaid from 'mermaid';
-import { renderMarkdown } from '../markdown/renderer.js';
 import { getRawMarkdownFromDocument, isProbablyRawMarkdownDocument } from './url-detection.js';
 import { DEFAULT_PREFERENCES, getPreferences, savePreferences } from './preferences.js';
 import { ensureThemeStyles } from './theme-assets.js';
@@ -11,6 +11,7 @@ let renderedMarkdown = '';
 let preferences = { ...DEFAULT_PREFERENCES };
 let rawMode = false;
 let refreshTimer = null;
+let rendererModulePromise = null;
 
 main().catch((error) => {
   showFallbackError(error);
@@ -19,11 +20,16 @@ main().catch((error) => {
 async function main() {
   preferences = await getPreferences();
 
-  if (!preferences.enabled || !isProbablyRawMarkdownDocument(window.location.href, document)) {
+  const isMarkdownDocument = preparedMarkdownDocument.isMarkdownDocument
+    || isProbablyRawMarkdownDocument(window.location.href, document);
+
+  if (!preferences.enabled || !isMarkdownDocument) {
     return;
   }
 
-  originalMarkdown = getRawMarkdownFromDocument(document);
+  originalMarkdown = preparedMarkdownDocument.isMarkdownDocument
+    ? preparedMarkdownDocument.markdown
+    : getRawMarkdownFromDocument(document);
   rawMode = preferences.rawMode;
 
   await renderReader(originalMarkdown);
@@ -42,10 +48,16 @@ async function renderReader(markdown) {
     return;
   }
 
+  const { renderMarkdown } = await getRendererModule();
   const result = await renderMarkdown(markdown, { sanitize: true });
   mountReader(result);
   await injectCustomCss(result.cssImports);
   await renderMermaid();
+}
+
+function getRendererModule() {
+  rendererModulePromise ??= import('../markdown/renderer.js');
+  return rendererModulePromise;
 }
 
 function mountReader(result) {
@@ -107,10 +119,13 @@ function renderToc(toc) {
 }
 
 function bindReaderEvents(root) {
+  const toolbar = root.querySelector('.md-reader-toolbar');
+
   root.querySelector('[data-action="toggle-toc"]')?.addEventListener('click', () => {
     const sidebar = root.querySelector('.md-reader-sidebar');
     if (sidebar) {
       sidebar.hidden = !sidebar.hidden;
+      root.classList.toggle('md-reader--sidebar-hidden', sidebar.hidden);
     }
   });
 
@@ -154,7 +169,40 @@ function bindReaderEvents(root) {
     root.querySelector('.md-reader-lightbox').hidden = true;
   });
 
-  document.addEventListener('scroll', updateProgress, { passive: true });
+  document.addEventListener('scroll', () => {
+    updateProgress();
+    if (toolbar) {
+      toolbar.classList.toggle('md-reader-toolbar--scrolled', window.scrollY > 4);
+    }
+  }, { passive: true });
+
+  observeActiveHeading(root);
+}
+
+function observeActiveHeading(root) {
+  const headings = [...root.querySelectorAll('.md-reader-content [id]')];
+  const tocLinks = [...root.querySelectorAll('.md-reader-toc__item')];
+  if (headings.length === 0 || tocLinks.length === 0) {
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    const visible = entries
+      .filter((e) => e.isIntersecting)
+      .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+    const activeId = visible[0]?.target.id;
+    if (!activeId) {
+      return;
+    }
+
+    tocLinks.forEach((link) => {
+      const isActive = decodeURIComponent(link.getAttribute('href').slice(1)) === activeId;
+      link.classList.toggle('md-reader-toc__item--active', isActive);
+    });
+  }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
+
+  headings.forEach((h) => observer.observe(h));
 }
 
 async function refreshFromSource() {
