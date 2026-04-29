@@ -1,0 +1,8 @@
+{
+  "extensionName": {
+    "message": "Markdown Reader Pro"
+  },
+  "extensionDescription": {
+    "message": "直接在浏览器中渲染本地和在线 Markdown 文件，支持目录、主题、数学公式和 Mermaid 图表。"
+  }
+}

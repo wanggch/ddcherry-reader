@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Markdown Reader Pro 设置</title>
+    <link rel="stylesheet" href="assets/options.css">
+  </head>
+  <body>
+    <main>
+      <h1>Markdown Reader Pro</h1>
+      <p class="description">配置 Markdown 文件打开时的默认阅读体验。</p>
+
+      <form id="options-form">
+        <fieldset>
+          <legend>基础</legend>
+          <label class="checkbox-label">
+            <input type="checkbox" name="enabled">
+            启用自动 Markdown 渲染
+          </label>
+
+          <label>
+            默认主题
+            <select name="theme">
+              <option value="system">跟随系统</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>阅读</legend>
+          <label class="checkbox-label">
+            <input type="checkbox" name="toc">
+            显示侧边栏目录
+          </label>
+
+          <label>
+            目录位置
+            <select name="tocPosition">
+              <option value="left">左侧</option>
+              <option value="right">右侧</option>
+            </select>
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" name="autoRefresh">
+            本地文件每 2 秒自动刷新
+          </label>
+
+          <label class="checkbox-label">
+            <input type="checkbox" name="rawMode">
+            默认显示原始 Markdown
+          </label>
+        </fieldset>
+
+        <div class="actions">
+          <button type="submit">保存设置</button>
+          <button type="reset">恢复默认</button>
+          <span id="status" role="status" aria-live="polite"></span>
+        </div>
+      </form>
+    </main>
+    <script src="assets/options.js"></script>
+  </body>
+</html>

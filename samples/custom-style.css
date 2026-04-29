@@ -1,0 +1,8 @@
+.markdown-body blockquote {
+  border-left-color: #2da44e;
+  background: rgba(45, 164, 78, 0.08);
+}
+
+.markdown-body h1 {
+  color: #0969da;
+}

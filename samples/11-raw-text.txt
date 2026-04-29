@@ -1,0 +1,6 @@
+# Markdown In TXT
+
+This `.txt` file is intentionally Markdown-like.
+
+- It should render because `.txt` is enabled as an optional supported extension.
+- Use Raw mode to inspect the original source.

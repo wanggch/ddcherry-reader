@@ -1,0 +1,320 @@
+:root[data-md-reader-theme='light'] {
+  color-scheme: light;
+  --md-reader-bg: #f6f8fa;
+  --md-reader-panel: #ffffff;
+  --md-reader-border: #d0d7de;
+  --md-reader-text: #1f2328;
+  --md-reader-muted: #59636e;
+  --md-reader-accent: #0969da;
+  --md-reader-toolbar: rgba(255, 255, 255, 0.94);
+}
+
+:root[data-md-reader-theme='dark'] {
+  color-scheme: dark;
+  --md-reader-bg: #0d1117;
+  --md-reader-panel: #161b22;
+  --md-reader-border: #30363d;
+  --md-reader-text: #e6edf3;
+  --md-reader-muted: #8b949e;
+  --md-reader-accent: #2f81f7;
+  --md-reader-toolbar: rgba(13, 17, 23, 0.94);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--md-reader-bg);
+  color: var(--md-reader-text);
+  font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.md-reader-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--md-reader-border);
+  background: var(--md-reader-toolbar);
+  backdrop-filter: blur(10px);
+}
+
+.md-reader-toolbar__brand {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.md-reader-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.md-reader-toolbar button,
+.md-reader-lightbox button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--md-reader-border);
+  border-radius: 6px;
+  background: var(--md-reader-panel);
+  color: var(--md-reader-text);
+  cursor: pointer;
+}
+
+.md-reader-toolbar button:hover,
+.md-reader-lightbox button:hover {
+  border-color: var(--md-reader-accent);
+  color: var(--md-reader-accent);
+}
+
+.md-reader-progress {
+  position: fixed;
+  top: 52px;
+  left: 0;
+  z-index: 21;
+  width: 100%;
+  height: 3px;
+  background: var(--md-reader-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.md-reader-shell {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+  gap: 28px;
+  width: min(1280px, calc(100% - 40px));
+  margin: 28px auto 64px;
+}
+
+.md-reader--toc-right .md-reader-shell {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 280px);
+}
+
+.md-reader--toc-right .md-reader-sidebar {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.md-reader--toc-right .md-reader-content {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.md-reader-sidebar {
+  position: sticky;
+  top: 80px;
+  align-self: start;
+  max-height: calc(100vh - 100px);
+  padding: 16px;
+  overflow: auto;
+  resize: horizontal;
+  border: 1px solid var(--md-reader-border);
+  border-radius: 8px;
+  background: var(--md-reader-panel);
+}
+
+.md-reader-sidebar[hidden] {
+  display: none;
+}
+
+.md-reader-sidebar[hidden] + .md-reader-content,
+.md-reader:has(.md-reader-sidebar[hidden]) .md-reader-content {
+  grid-column: 1 / -1;
+}
+
+.md-reader-sidebar__title {
+  margin-bottom: 10px;
+  color: var(--md-reader-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.md-reader-toc {
+  display: grid;
+  gap: 2px;
+}
+
+.md-reader-toc__item {
+  display: block;
+  padding: 5px 8px;
+  border-radius: 6px;
+  color: var(--md-reader-muted);
+  text-decoration: none;
+}
+
+.md-reader-toc__item:hover {
+  background: color-mix(in srgb, var(--md-reader-accent) 10%, transparent);
+  color: var(--md-reader-accent);
+}
+
+.md-reader-toc__item--h2 { padding-left: 18px; }
+.md-reader-toc__item--h3 { padding-left: 30px; }
+.md-reader-toc__item--h4,
+.md-reader-toc__item--h5,
+.md-reader-toc__item--h6 { padding-left: 42px; }
+
+.md-reader-content {
+  box-sizing: border-box;
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: 36px 44px;
+  border: 1px solid var(--md-reader-border);
+  border-radius: 8px;
+  background: var(--md-reader-panel);
+}
+
+.md-reader-content img {
+  cursor: zoom-in;
+}
+
+.md-reader-raw {
+  min-height: 65vh;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admonition {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border-left: 4px solid var(--md-reader-accent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--md-reader-accent) 10%, transparent);
+}
+
+.admonition-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
+
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  overflow: auto;
+}
+
+.mermaid-error {
+  display: block;
+  padding: 12px;
+  border: 1px solid #d1242f;
+  border-radius: 6px;
+  color: #d1242f;
+  white-space: pre-wrap;
+}
+
+.md-reader-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 48px;
+  background: rgba(0, 0, 0, 0.82);
+}
+
+.md-reader-lightbox[hidden] {
+  display: none;
+}
+
+.md-reader-lightbox img {
+  max-width: min(1100px, 92vw);
+  max-height: 82vh;
+  border-radius: 8px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+.md-reader-lightbox button {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+}
+
+.contains-task-list {
+  padding-left: 1.4em;
+}
+
+.task-list-item {
+  list-style: none;
+}
+
+.task-list-item-checkbox {
+  margin: 0 0.45em 0.2em -1.4em;
+  vertical-align: middle;
+}
+
+.md-reader-fallback {
+  max-width: 960px;
+  margin: 32px auto;
+  padding: 24px;
+}
+
+.md-reader-fallback textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 60vh;
+  margin-top: 16px;
+}
+
+@media (max-width: 860px) {
+  .md-reader-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 10px 14px;
+  }
+
+  .md-reader-progress {
+    top: 92px;
+  }
+
+  .md-reader-shell {
+    display: block;
+    width: min(100% - 24px, 760px);
+    margin-top: 18px;
+  }
+
+  .md-reader-sidebar {
+    position: static;
+    max-height: 260px;
+    margin-bottom: 16px;
+    resize: none;
+  }
+
+  .md-reader-content {
+    padding: 24px 18px;
+  }
+}
+
+@media print {
+  .md-reader-toolbar,
+  .md-reader-sidebar,
+  .md-reader-progress,
+  .md-reader-lightbox {
+    display: none !important;
+  }
+
+  .md-reader-shell {
+    display: block;
+    width: auto;
+    margin: 0;
+  }
+
+  .md-reader-content {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+}

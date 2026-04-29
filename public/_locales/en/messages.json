@@ -1,0 +1,8 @@
+{
+  "extensionName": {
+    "message": "Markdown Reader Pro"
+  },
+  "extensionDescription": {
+    "message": "Render local and online Markdown files directly in the browser with TOC, themes, math, and Mermaid diagrams."
+  }
+}
