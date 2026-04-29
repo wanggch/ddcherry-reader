@@ -3,6 +3,12 @@ import mermaid from 'mermaid';
 import { getRawMarkdownFromDocument, isProbablyRawMarkdownDocument } from './url-detection.js';
 import { DEFAULT_PREFERENCES, getPreferences, savePreferences } from './preferences.js';
 import { ensureThemeStyles } from './theme-assets.js';
+import { enhanceMermaidDiagrams } from './mermaid-viewer.js';
+import {
+  scanMdTreeFromEntry,
+  readFileEntryContent,
+  flattenTree
+} from './file-explorer.js';
 
 const REFRESH_INTERVAL_MS = 2000;
 const THEME_CYCLE = ['light', 'paper', 'mint', 'vue', 'dark', 'night', 'purple', 'black'];
@@ -33,6 +39,12 @@ let preferences = { ...DEFAULT_PREFERENCES };
 let rawMode = false;
 let refreshTimer = null;
 let rendererModulePromise = null;
+let currentDirEntry = null;
+let currentMdTree = [];
+let currentMdFiles = [];
+let currentFileName = '';
+let hasFolderTab = false;
+let dropHandlerAbortController = null;
 
 main().catch((error) => {
   showFallbackError(error);
@@ -52,6 +64,7 @@ async function main() {
     ? preparedMarkdownDocument.markdown
     : getRawMarkdownFromDocument(document);
   rawMode = preferences.rawMode;
+  currentFileName = decodeURIComponent(window.location.pathname.split('/').pop() || '');
 
   await renderReader(originalMarkdown);
   startAutoRefresh();
@@ -100,7 +113,7 @@ function mountReader(result) {
 
   const root = document.createElement('div');
   root.id = 'md-reader-root';
-  const hasSidebar = !rawMode && preferences.toc && result.toc?.length > 0;
+  const hasSidebar = !rawMode && preferences.toc;
   root.className = `md-reader md-reader--toc-${preferences.tocPosition}${hasSidebar ? '' : ' md-reader--sidebar-hidden'}`;
   root.dataset.theme = effectiveTheme;
   root.innerHTML = `
@@ -194,7 +207,7 @@ function mountReader(result) {
     </header>
     <div class="md-reader-progress" aria-hidden="true"></div>
     <div class="md-reader-shell">
-      ${renderToc(result.toc)}
+      ${renderSidebar(result.toc)}
       <main class="md-reader-content markdown-body" tabindex="-1">${result.html}</main>
     </div>
     <div class="md-reader-lightbox" hidden>
@@ -205,26 +218,237 @@ function mountReader(result) {
 
   document.body.append(root);
   bindReaderEvents(root);
+  setupDropHandler(root);
+  if (currentDirEntry) {
+    addFolderTab(root);
+    if (preferences.sidebarTab === 'folder') {
+      void switchToTab(root, 'folder');
+    }
+  }
   updateProgress();
 }
 
-function renderToc(toc) {
-  if (!preferences.toc || rawMode || toc.length === 0) {
+function renderSidebar(toc) {
+  if (!preferences.toc || rawMode) {
     return '<aside class="md-reader-sidebar" hidden></aside>';
   }
 
-  const items = toc.map((item) => `
-    <a class="md-reader-toc__item md-reader-toc__item--h${item.level}" href="#${item.id}">
-      ${escapeHtml(item.text)}
-    </a>
-  `).join('');
+  const hasToc = toc && toc.length > 0;
+  const tocItems = hasToc
+    ? toc.map((item) => `
+      <a class="md-reader-toc__item md-reader-toc__item--h${item.level}" href="#${item.id}">
+        ${escapeHtml(item.text)}
+      </a>
+    `).join('')
+    : '';
 
   return `
-    <aside class="md-reader-sidebar" aria-label="Table of contents">
-      <div class="md-reader-sidebar__title">Contents</div>
-      <nav class="md-reader-toc">${items}</nav>
+    <aside class="md-reader-sidebar" aria-label="Sidebar">
+      <div class="md-reader-sidebar-tabs" role="tablist">
+        <button type="button" class="md-reader-sidebar-tab md-reader-sidebar-tab--active" data-tab="toc" role="tab" aria-selected="true">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          大纲
+        </button>
+      </div>
+      <div class="md-reader-sidebar-panels">
+        <div class="md-reader-sidebar-panel md-reader-sidebar-panel--active" data-panel="toc" role="tabpanel">
+          ${hasToc ? `
+            <div class="md-reader-sidebar__title">Contents</div>
+            <nav class="md-reader-toc">${tocItems}</nav>
+          ` : '<div class="md-reader-sidebar__empty">暂无目录</div>'}
+        </div>
+      </div>
     </aside>
   `;
+}
+
+function setupDropHandler(root) {
+  dropHandlerAbortController?.abort();
+  dropHandlerAbortController = new AbortController();
+
+  const dropOverlay = document.createElement('div');
+  dropOverlay.className = 'md-reader-drop-overlay';
+  dropOverlay.hidden = true;
+  dropOverlay.innerHTML = `
+    <div class="md-reader-drop-message">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <span>松开以打开文件夹</span>
+    </div>
+  `;
+  root.append(dropOverlay);
+
+  document.addEventListener('dragover', (e) => {
+    const hasDirectory = [...(e.dataTransfer?.items ?? [])].some((item) => {
+      const entry = item.webkitGetAsEntry?.();
+      return entry && entry.isDirectory;
+    });
+    if (hasDirectory) {
+      e.preventDefault();
+      dropOverlay.hidden = false;
+    }
+  }, { signal: dropHandlerAbortController.signal });
+
+  document.addEventListener('dragleave', (e) => {
+    if (!root.contains(e.relatedTarget)) {
+      dropOverlay.hidden = true;
+    }
+  }, { signal: dropHandlerAbortController.signal });
+
+  document.addEventListener('drop', async (e) => {
+    const items = [...(e.dataTransfer?.items ?? [])];
+    const dirItem = items.find((item) => {
+      const entry = item.webkitGetAsEntry?.();
+      return entry && entry.isDirectory;
+    });
+
+    if (!dirItem) {
+      dropOverlay.hidden = true;
+      return;
+    }
+
+    e.preventDefault();
+    dropOverlay.hidden = true;
+
+    const dirEntry = dirItem.webkitGetAsEntry();
+    currentDirEntry = dirEntry;
+
+    addFolderTab(root);
+    await switchToTab(root, 'folder');
+  }, { signal: dropHandlerAbortController.signal });
+}
+
+function addFolderTab(root) {
+  if (root.querySelector('[data-tab="folder"]')) {
+    hasFolderTab = true;
+    return;
+  }
+
+  const tabs = root.querySelector('.md-reader-sidebar-tabs');
+  const panels = root.querySelector('.md-reader-sidebar-panels');
+  if (!tabs || !panels) return;
+
+  hasFolderTab = true;
+
+  const tabBtn = document.createElement('button');
+  tabBtn.type = 'button';
+  tabBtn.className = 'md-reader-sidebar-tab';
+  tabBtn.dataset.tab = 'folder';
+  tabBtn.role = 'tab';
+  tabBtn.setAttribute('aria-selected', 'false');
+  tabBtn.innerHTML = `
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    文件夹
+  `;
+  tabs.append(tabBtn);
+
+  const panel = document.createElement('div');
+  panel.className = 'md-reader-sidebar-panel';
+  panel.dataset.panel = 'folder';
+  panel.role = 'tabpanel';
+  panel.innerHTML = '<div class="md-reader-folder-panel"></div>';
+  panels.append(panel);
+
+  tabBtn.addEventListener('click', async () => {
+    await switchToTab(root, 'folder');
+  });
+}
+
+async function switchToTab(root, tabName) {
+  if (tabName !== preferences.sidebarTab) {
+    preferences = { ...preferences, sidebarTab: tabName };
+    await savePreferences({ sidebarTab: tabName });
+  }
+
+  root.querySelectorAll('.md-reader-sidebar-tab').forEach((t) => {
+    const active = t.dataset.tab === tabName;
+    t.classList.toggle('md-reader-sidebar-tab--active', active);
+    t.setAttribute('aria-selected', String(active));
+  });
+
+  root.querySelectorAll('.md-reader-sidebar-panel').forEach((p) => {
+    p.classList.toggle('md-reader-sidebar-panel--active', p.dataset.panel === tabName);
+  });
+
+  if (tabName === 'folder') {
+    await renderFolderPanel(root);
+  }
+}
+
+async function renderFolderPanel(root) {
+  const panel = root.querySelector('[data-panel="folder"] .md-reader-folder-panel');
+  if (!panel || !currentDirEntry) return;
+
+  panel.innerHTML = '<div class="md-reader-folder-loading">加载中…</div>';
+
+  try {
+    currentMdTree = await scanMdTreeFromEntry(currentDirEntry);
+    currentMdFiles = flattenTree(currentMdTree);
+
+    if (currentMdFiles.length === 0) {
+      panel.innerHTML = '<div class="md-reader-folder-empty">该文件夹中没有 Markdown 文件</div>';
+      return;
+    }
+
+    const treeHtml = renderFileTree(currentMdTree, 0);
+    panel.innerHTML = `<div class="md-reader-file-tree">${treeHtml}</div>`;
+    bindFileTreeEvents(root, panel);
+  } catch (err) {
+    panel.innerHTML = `<div class="md-reader-folder-error">读取失败：${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderFileTree(tree, depth) {
+  return tree.map((entry) => {
+    const indent = depth * 12;
+
+    if (entry.type === 'dir') {
+      return `
+        <div class="md-reader-tree-dir" style="padding-left: ${indent}px">
+          <span class="md-reader-tree-icon">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          </span>
+          <span class="md-reader-tree-label">${escapeHtml(entry.name)}</span>
+        </div>
+        <div class="md-reader-tree-children">
+          ${renderFileTree(entry.children, depth + 1)}
+        </div>
+      `;
+    }
+
+    const isActive = entry.name === currentFileName;
+    return `
+      <button type="button" class="md-reader-file-item${isActive ? ' md-reader-file-item--active' : ''}" data-file-path="${escapeHtml(entry.path)}" style="padding-left: ${indent + 8}px">
+        <span class="md-reader-file-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </span>
+        <span class="md-reader-file-name">${escapeHtml(entry.name)}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function bindFileTreeEvents(root, panel) {
+  panel.querySelectorAll('[data-file-path]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const filePath = btn.dataset.filePath;
+      const fileEntry = currentMdFiles.find((f) => f.path === filePath);
+      if (!fileEntry) return;
+
+      try {
+        const content = await readFileEntryContent(fileEntry.entry);
+        originalMarkdown = content;
+        currentFileName = fileEntry.name;
+        await renderReader(content);
+      } catch (err) {
+        panel.insertAdjacentHTML('afterbegin', `<div class="md-reader-folder-error">无法打开文件：${escapeHtml(err.message)}</div>`);
+      }
+    });
+  });
 }
 
 function bindReaderEvents(root) {
@@ -236,6 +460,31 @@ function bindReaderEvents(root) {
       sidebar.hidden = !sidebar.hidden;
       root.classList.toggle('md-reader--sidebar-hidden', sidebar.hidden);
     }
+  });
+
+  // Sidebar tab switching
+  root.querySelectorAll('.md-reader-sidebar-tab').forEach((tab) => {
+    tab.addEventListener('click', async () => {
+      const tabName = tab.dataset.tab;
+      if (tabName === preferences.sidebarTab) return;
+
+      preferences = { ...preferences, sidebarTab: tabName };
+      await savePreferences({ sidebarTab: tabName });
+
+      root.querySelectorAll('.md-reader-sidebar-tab').forEach((t) => {
+        const active = t.dataset.tab === tabName;
+        t.classList.toggle('md-reader-sidebar-tab--active', active);
+        t.setAttribute('aria-selected', String(active));
+      });
+
+      root.querySelectorAll('.md-reader-sidebar-panel').forEach((p) => {
+        p.classList.toggle('md-reader-sidebar-panel--active', p.dataset.panel === tabName);
+      });
+
+      if (tabName === 'folder') {
+        await renderFolderPanel(root);
+      }
+    });
   });
 
   const themeDropdown = root.querySelector('.md-reader-theme-dropdown');
@@ -460,6 +709,7 @@ async function renderMermaid() {
     } else {
       mermaid.init(undefined, diagrams);
     }
+    enhanceMermaidDiagrams(document);
   } catch (error) {
     diagrams.forEach((diagram) => {
       diagram.classList.add('mermaid-error');

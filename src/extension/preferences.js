@@ -5,7 +5,8 @@ export const DEFAULT_PREFERENCES = Object.freeze({
   tocPosition: 'left',
   autoRefresh: false,
   rawMode: false,
-  fontSize: 16
+  fontSize: 16,
+  sidebarTab: 'toc'
 });
 
 const SUPPORTED_KEYS = new Set(Object.keys(DEFAULT_PREFERENCES));

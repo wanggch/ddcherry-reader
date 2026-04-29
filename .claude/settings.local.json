@@ -5,7 +5,8 @@
       "WebFetch(domain:github.com)",
       "Bash(grep:*)",
       "Bash(npm run:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "WebSearch"
     ]
   }
 }
