@@ -4,7 +4,7 @@ Markdown Reader Pro 是一个 Manifest V3 浏览器扩展，用于在 Chrome、E
 
 ## 功能
 
-- 自动识别 `file://`、`http://`、`https://` 下的 Markdown-like 文件。
+- 自动识别 `file://` 下的 Markdown-like 文件。
 - GitHub Flavored Markdown 渲染，支持表格、任务列表、脚注、Emoji、上标、下标、HTML、KaTeX 数学公式、Mermaid 图表和 admonitions。
 - 侧边栏 TOC，支持左/右位置、隐藏、平滑滚动和拖拽调整宽度。
 - Light、Dark、System 三种主题策略，正文和代码高亮同步切换。

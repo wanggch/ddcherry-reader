@@ -5,18 +5,20 @@ describe('isMarkdownUrl', () => {
   it.each([
     ['file:///Users/me/readme.md'],
     ['file:///C:/docs/spec.markdown'],
-    ['https://example.com/notes.mkd?raw=1'],
-    ['https://example.com/guide.mdx#intro'],
-    ['http://example.com/plain.txt']
+    ['file:///Users/me/notes.mkd'],
+    ['file:///Users/me/guide.mdx'],
+    ['file:///Users/me/plain.txt']
   ])('accepts supported Markdown-like URLs: %s', (url) => {
     expect(isMarkdownUrl(url)).toBe(true);
   });
 
   it.each([
-    ['https://example.com/index.html'],
+    ['file:///Users/me/index.html'],
     ['chrome://extensions'],
     ['about:blank'],
-    ['https://example.com/readme.md/image.png']
+    ['file:///Users/me/readme.md/image.png'],
+    ['https://example.com/readme.md'],
+    ['http://example.com/readme.md']
   ])('rejects non-Markdown URLs: %s', (url) => {
     expect(isMarkdownUrl(url)).toBe(false);
   });
@@ -30,6 +32,6 @@ describe('isProbablyRawMarkdownDocument', () => {
 
   it('rejects already-rendered HTML documents', () => {
     document.body.innerHTML = '<main><h1>Title</h1><p>Body</p></main>';
-    expect(isProbablyRawMarkdownDocument('https://example.com/index.html', document)).toBe(false);
+    expect(isProbablyRawMarkdownDocument('file:///Users/me/index.html', document)).toBe(false);
   });
 });
