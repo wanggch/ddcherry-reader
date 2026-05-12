@@ -1037,11 +1037,12 @@ body {
 }
 
 .md-reader-mermaid-viewer__canvas {
+  box-sizing: border-box;
   display: grid;
-  place-items: center;
+  place-items: safe center;
   width: min(1680px, 98vw);
   height: min(1040px, 92vh);
-  overflow: auto;
+  overflow: hidden;
   padding: 28px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: var(--md-reader-radius);
@@ -1050,13 +1051,21 @@ body {
 }
 
 .md-reader-mermaid-viewer__diagram {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
   margin: 0;
 }
 
 .md-reader-mermaid-viewer__diagram svg {
-  min-width: clamp(920px, 92vw, 1680px);
-  height: auto;
-  max-width: none;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .md-reader-mermaid-viewer__close {

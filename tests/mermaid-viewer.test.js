@@ -54,8 +54,11 @@ describe('enhanceMermaidDiagrams', () => {
     expect(root.querySelector('.mermaid-error').closest('.md-reader-mermaid-frame')).toBeNull();
   });
 
-  it('scales fullscreen Mermaid SVGs toward the viewport instead of keeping the inline size', () => {
+  it('fits fullscreen Mermaid SVGs inside the viewer without horizontal scrollbars', () => {
     const css = readFileSync('src/styles/reader.css', 'utf8');
+    const canvasRule = css.match(/\.md-reader-mermaid-viewer__canvas\s*\{[^}]+\}/)?.[0] ?? '';
+    const diagramRule = css.match(/\.md-reader-mermaid-viewer__diagram\s*\{[^}]+\}/)?.[0] ?? '';
+    const svgRule = css.match(/\.md-reader-mermaid-viewer__diagram svg\s*\{[^}]+\}/)?.[0] ?? '';
 
     expect(css).toContain('.md-reader-mermaid-viewer__canvas');
     expect(css).toContain('padding: 24px;');
@@ -63,8 +66,27 @@ describe('enhanceMermaidDiagrams', () => {
     expect(css).toContain('height: 28px;');
     expect(css).toContain('width: min(1680px, 98vw);');
     expect(css).toContain('height: min(1040px, 92vh);');
-    expect(css).toContain('min-width: clamp(920px, 92vw, 1680px);');
+    expect(canvasRule).toContain('overflow: hidden;');
+    expect(diagramRule).toContain('width: 100%;');
+    expect(diagramRule).toContain('height: 100%;');
+    expect(svgRule).toContain('width: 100%;');
+    expect(svgRule).toContain('height: 100%;');
+    expect(svgRule).toContain('max-width: 100%;');
+    expect(svgRule).toContain('max-height: 100%;');
+    expect(svgRule).toContain('min-width: 0;');
+    expect(svgRule).not.toContain('min-width: clamp(920px, 92vw, 1680px);');
+    expect(svgRule).not.toContain('max-width: none;');
     expect(css).not.toContain('.md-reader-mermaid-viewer__diagram :is(text, tspan, .label, .nodeLabel, .edgeLabel, .cluster-label)');
     expect(css).not.toContain('font-size: 1.18em !important;');
+  });
+
+  it('keeps fitting fullscreen Mermaid diagrams centered while allowing tall diagrams to scroll from the edge', () => {
+    const css = readFileSync('src/styles/reader.css', 'utf8');
+    const canvasRule = css.match(/\.md-reader-mermaid-viewer__canvas\s*\{[^}]+\}/)?.[0] ?? '';
+
+    expect(canvasRule).toContain('place-items: safe center;');
+    expect(canvasRule).toContain('box-sizing: border-box;');
+    expect(canvasRule).not.toContain('place-items: start center;');
+    expect(canvasRule).not.toContain('place-items: center;');
   });
 });
