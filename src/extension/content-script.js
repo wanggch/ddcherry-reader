@@ -37,6 +37,8 @@ let originalMarkdown = '';
 let renderedMarkdown = '';
 let preferences = { ...DEFAULT_PREFERENCES };
 let rawMode = false;
+let lastContentHash = null;
+let isRefreshing = false;
 let refreshTimer = null;
 let rendererModulePromise = null;
 let currentDirEntry = null;
@@ -63,10 +65,12 @@ async function main() {
   originalMarkdown = preparedMarkdownDocument.isMarkdownDocument
     ? preparedMarkdownDocument.markdown
     : getRawMarkdownFromDocument(document);
+  lastContentHash = computeHash(originalMarkdown);
   rawMode = preferences.rawMode;
   currentFileName = decodeURIComponent(window.location.pathname.split('/').pop() || '');
 
   await renderReader(originalMarkdown);
+  setupBackgroundMessageListener();
   startAutoRefresh();
 }
 
@@ -109,6 +113,7 @@ function mountReader(result) {
   document.documentElement.style.setProperty('--md-reader-font-size', `${Math.max(12, Math.min(24, preferences.fontSize || 16))}px`);
   document.body.dataset.mdReaderRendered = 'true';
   document.title = document.title || inferTitle(renderedMarkdown) || 'Markdown Reader Pro';
+  setFavicon();
   document.body.innerHTML = '';
 
   const root = document.createElement('div');
@@ -157,28 +162,6 @@ function mountReader(result) {
             `).join('')}
           </div>
         </div>
-        <!-- 
-        <button type="button" data-action="toggle-raw" aria-label="Toggle raw Markdown" title="${rawMode ? '预览' : '源码'}">
-          <span class="md-reader-btn-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              ${rawMode
-                ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
-                : '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>'
-              }
-            </svg>
-          </span>
-          <span class="md-reader-btn-label">${rawMode ? '预览' : '源码'}</span>
-        </button>
-        <button type="button" data-action="refresh" aria-label="Refresh Markdown" title="刷新">
-          <span class="md-reader-btn-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-            </svg>
-          </span>
-          <span class="md-reader-btn-label">刷新</span>
-        </button>
-        -->
         <div class="md-reader-font-size" title="字号 ${preferences.fontSize}px">
           <button type="button" data-action="font-decrease" aria-label="减小字号" title="减小字号">
             <span class="md-reader-btn-icon">
@@ -192,17 +175,6 @@ function mountReader(result) {
             </span>
           </button>
         </div>
-        <!-- 
-        <button type="button" data-action="settings" aria-label="Open settings" title="设置">
-          <span class="md-reader-btn-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </span>
-          <span class="md-reader-btn-label">设置</span>
-        </button>
-        -->
       </nav>
     </header>
     <div class="md-reader-progress" aria-hidden="true"></div>
@@ -442,6 +414,7 @@ function bindFileTreeEvents(root, panel) {
       try {
         const content = await readFileEntryContent(fileEntry.entry);
         originalMarkdown = content;
+        lastContentHash = computeHash(content);
         currentFileName = fileEntry.name;
         await renderReader(content);
       } catch (err) {
@@ -462,7 +435,6 @@ function bindReaderEvents(root) {
     }
   });
 
-  // Sidebar tab switching
   root.querySelectorAll('.md-reader-sidebar-tab').forEach((tab) => {
     tab.addEventListener('click', async () => {
       const tabName = tab.dataset.tab;
@@ -524,7 +496,6 @@ function bindReaderEvents(root) {
     });
   });
 
-  // Close menu when clicking outside
   document.addEventListener('click', (e) => {
     if (themeDropdown && !themeDropdown.contains(e.target)) {
       closeThemeMenu();
@@ -555,7 +526,7 @@ function bindReaderEvents(root) {
     await renderReader(renderedMarkdown);
   });
 
-  root.querySelector('[data-action="refresh"]')?.addEventListener('click', refreshFromSource);
+  root.querySelector('[data-action="refresh"]')?.addEventListener('click', () => refreshFromSource());
 
   root.querySelector('[data-action="settings"]')?.addEventListener('click', async () => {
     const runtime = globalThis.chrome?.runtime ?? globalThis.browser?.runtime;
@@ -575,7 +546,6 @@ function bindReaderEvents(root) {
     } catch {
       // fallback below
     }
-    // Final fallback: open options page directly
     try {
       const url = runtime?.getURL?.('options.html') ?? 'options.html';
       window.open(url, '_blank');
@@ -635,27 +605,63 @@ function observeActiveHeading(root) {
       if (isActive) activeLink = link;
     });
 
-    // Scroll TOC panel so the active item stays visible
     activeLink?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
 
   headings.forEach((h) => observer.observe(h));
 }
 
-async function refreshFromSource() {
+// ── Auto-refresh: hash-based change detection with scroll position preservation ──
+
+function setupBackgroundMessageListener() {
+  const runtime = globalThis.chrome?.runtime ?? globalThis.browser?.runtime;
+  if (!runtime?.onMessage) return;
+
+  runtime.onMessage.addListener((message, _sender, sendResponse) => {
+    if (message?.action === 'checkFileChange') {
+      checkFileChange().then(sendResponse).catch(() => sendResponse({ changed: false }));
+      return true; // async response
+    }
+    return false;
+  });
+}
+
+async function checkFileChange() {
+  if (isRefreshing) return { changed: false };
+  if (window.location.protocol !== 'file:') {
+    if (!preferences.autoRefresh) return { changed: false };
+  }
+
   try {
-    const response = await fetch(window.location.href, { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error(`Refresh failed: ${response.status}`);
+    const text = await readMarkdownSource();
+    const hash = computeHash(text);
+
+    // First check: just initialize the hash without triggering a re-render.
+    if (lastContentHash === null) {
+      lastContentHash = hash;
+      return { changed: false };
     }
 
-    const nextMarkdown = await response.text();
-    if (nextMarkdown !== renderedMarkdown) {
-      await renderReader(nextMarkdown);
+    if (hash !== lastContentHash) {
+      await refreshWithMarkdown(text, hash, true);
+      return { changed: true };
     }
+
+    return { changed: false };
   } catch {
-    window.location.reload();
+    return { changed: false };
   }
+}
+
+function computeHash(str) {
+  let hash = 0;
+  const len = str.length;
+  for (let i = 0; i < len; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return hash.toString(36);
 }
 
 function startAutoRefresh() {
@@ -663,11 +669,175 @@ function startAutoRefresh() {
     clearInterval(refreshTimer);
   }
 
-  if (!preferences.autoRefresh || window.location.protocol !== 'file:') {
+  // Always enable auto-refresh for local file:// URLs
+  if (window.location.protocol === 'file:') {
+    refreshTimer = setInterval(() => checkFileChange().catch(() => {}), REFRESH_INTERVAL_MS);
     return;
   }
 
-  refreshTimer = setInterval(refreshFromSource, REFRESH_INTERVAL_MS);
+  if (!preferences.autoRefresh) {
+    return;
+  }
+
+  refreshTimer = setInterval(() => checkFileChange().catch(() => {}), REFRESH_INTERVAL_MS);
+}
+
+async function refreshFromSource(preserveScroll = false) {
+  try {
+    const nextMarkdown = await readMarkdownSource();
+    await refreshWithMarkdown(nextMarkdown, computeHash(nextMarkdown), preserveScroll);
+  } catch {
+    if (preserveScroll) {
+      window.location.reload();
+    }
+  }
+}
+
+async function readMarkdownSource() {
+  if (window.location.protocol === 'file:') {
+    return readLocalMarkdownSource();
+  }
+
+  const response = await fetch(window.location.href, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error(`Refresh failed: ${response.status}`);
+  }
+
+  return response.text();
+}
+
+async function readLocalMarkdownSource() {
+  // Primary: use XMLHttpRequest directly from content script (works for file:// pages)
+  try {
+    const text = await readFileViaXHR(window.location.href);
+    return text;
+  } catch {
+    // Fallback: ask background script to read the file
+  }
+
+  return readLocalMarkdownSourceFromBackground();
+}
+
+function readFileViaXHR(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    xhr.setRequestHeader('Pragma', 'no-cache');
+    xhr.responseType = 'text';
+    xhr.onload = () => {
+      if (xhr.status === 0 || xhr.status === 200) {
+        resolve(xhr.responseText);
+      } else {
+        reject(new Error(`XHR failed: ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('XHR network error'));
+    xhr.ontimeout = () => reject(new Error('XHR timeout'));
+    xhr.timeout = 5000;
+    xhr.send();
+  });
+}
+
+async function readLocalMarkdownSourceFromBackground() {
+  const runtime = globalThis.chrome?.runtime ?? globalThis.browser?.runtime;
+  if (!runtime?.sendMessage) {
+    throw new Error('Extension runtime messaging is unavailable');
+  }
+
+  const response = await sendRuntimeMessage(runtime, { action: 'readMarkdownSource' });
+  if (response?.success && typeof response.markdown === 'string') {
+    return response.markdown;
+  }
+
+  throw new Error(response?.error || 'Failed to read local Markdown source');
+}
+
+function sendRuntimeMessage(runtime, message) {
+  const browserRuntime = globalThis.browser?.runtime;
+
+  if (runtime === browserRuntime && !globalThis.chrome?.runtime) {
+    return runtime.sendMessage(message);
+  }
+
+  return new Promise((resolve, reject) => {
+    try {
+      runtime.sendMessage(message, (response) => {
+        const lastError = globalThis.chrome?.runtime?.lastError;
+        if (lastError) {
+          reject(new Error(lastError.message));
+          return;
+        }
+        resolve(response);
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+async function refreshWithMarkdown(nextMarkdown, newHash, preserveScroll = false) {
+  if (isRefreshing) return;
+  isRefreshing = true;
+
+  const savedPosition = preserveScroll ? captureScrollPosition() : null;
+
+  try {
+    if (newHash === lastContentHash) {
+      return;
+    }
+
+    lastContentHash = newHash;
+    originalMarkdown = nextMarkdown;
+    await renderReader(nextMarkdown);
+
+    if (savedPosition) {
+      restoreScrollPosition(savedPosition);
+    }
+  } catch {
+    if (preserveScroll) {
+      window.location.reload();
+    }
+  } finally {
+    isRefreshing = false;
+  }
+}
+
+function captureScrollPosition() {
+  const scrollY = window.scrollY;
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  const ratio = maxScroll > 0 ? scrollY / maxScroll : 0;
+
+  let headingId = null;
+  const headings = [...document.querySelectorAll('.md-reader-content [id]')];
+  for (let i = headings.length - 1; i >= 0; i--) {
+    const rect = headings[i].getBoundingClientRect();
+    if (rect.top <= 120) {
+      headingId = headings[i].id;
+      break;
+    }
+  }
+
+  return { scrollY, ratio, headingId };
+}
+
+function restoreScrollPosition(position) {
+  if (position.headingId) {
+    const el = document.getElementById(position.headingId);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const offset = rect.top + window.scrollY - 80;
+      window.scrollTo({ top: Math.max(0, offset), behavior: 'instant' });
+      return;
+    }
+  }
+
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  if (maxScroll > 0) {
+    window.scrollTo({ top: position.ratio * maxScroll, behavior: 'instant' });
+  } else {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
 }
 
 async function injectCustomCss(imports) {
@@ -829,4 +999,17 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function setFavicon() {
+  const svg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='15' y='5' width='70' height='90' rx='8' fill='%234a90d9'/%3E%3Crect x='28' y='28' width='44' height='5' rx='2.5' fill='white'/%3E%3Crect x='28' y='42' width='30' height='5' rx='2.5' fill='white' opacity='0.7'/%3E%3Crect x='28' y='56' width='38' height='5' rx='2.5' fill='white' opacity='0.5'/%3E%3Crect x='28' y='70' width='24' height='5' rx='2.5' fill='white' opacity='0.4'/%3E%3C/svg%3E`;
+
+  let link = document.querySelector('link[rel~="icon"]');
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.head.appendChild(link);
+  }
+  link.type = 'image/svg+xml';
+  link.href = svg;
 }

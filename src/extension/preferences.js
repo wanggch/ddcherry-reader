@@ -3,7 +3,7 @@ export const DEFAULT_PREFERENCES = Object.freeze({
   theme: 'system',
   toc: true,
   tocPosition: 'left',
-  autoRefresh: false,
+  autoRefresh: true,
   rawMode: false,
   fontSize: 16,
   sidebarTab: 'toc'
