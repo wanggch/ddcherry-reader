@@ -722,8 +722,6 @@ function readFileViaXHR(url) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
-    xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    xhr.setRequestHeader('Pragma', 'no-cache');
     xhr.responseType = 'text';
     xhr.onload = () => {
       if (xhr.status === 0 || xhr.status === 200) {
