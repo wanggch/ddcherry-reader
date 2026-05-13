@@ -695,7 +695,7 @@ async function refreshFromSource(preserveScroll = false) {
 
 async function readMarkdownSource() {
   if (window.location.protocol === 'file:') {
-    return readLocalMarkdownSource();
+    return readLocalMarkdownSourceFromBackground();
   }
 
   const response = await fetch(window.location.href, { cache: 'no-store' });
@@ -704,37 +704,6 @@ async function readMarkdownSource() {
   }
 
   return response.text();
-}
-
-async function readLocalMarkdownSource() {
-  // Primary: use XMLHttpRequest directly from content script (works for file:// pages)
-  try {
-    const text = await readFileViaXHR(window.location.href);
-    return text;
-  } catch {
-    // Fallback: ask background script to read the file
-  }
-
-  return readLocalMarkdownSourceFromBackground();
-}
-
-function readFileViaXHR(url) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.responseType = 'text';
-    xhr.onload = () => {
-      if (xhr.status === 0 || xhr.status === 200) {
-        resolve(xhr.responseText);
-      } else {
-        reject(new Error(`XHR failed: ${xhr.status}`));
-      }
-    };
-    xhr.onerror = () => reject(new Error('XHR network error'));
-    xhr.ontimeout = () => reject(new Error('XHR timeout'));
-    xhr.timeout = 5000;
-    xhr.send();
-  });
 }
 
 async function readLocalMarkdownSourceFromBackground() {
