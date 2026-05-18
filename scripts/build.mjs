@@ -13,8 +13,9 @@ await cp(resolve(root, 'public'), dist, { recursive: true });
 
 await Promise.all([
   bundle('src/extension/content-script.js', 'assets/contentScript.js', 'iife'),
-  bundle('src/extension/background.js', 'assets/background.js', 'esm'),
-  bundle('src/options/options.js', 'assets/options.js', 'iife')
+  bundle('src/extension/background.js', 'assets/background.js', 'iife'),
+  bundle('src/options/options.js', 'assets/options.js', 'iife'),
+  bundle('src/extension/offscreen.js', 'assets/offscreen.js', 'iife')
 ]);
 
 await Promise.all([

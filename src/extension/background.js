@@ -1,7 +1,12 @@
 import { DEFAULT_PREFERENCES } from './preferences.js';
+import { isMarkdownUrl } from './url-detection.js';
 
 const runtime = globalThis.browser?.runtime ?? globalThis.chrome?.runtime;
 const storage = globalThis.browser?.storage?.sync ?? globalThis.chrome?.storage?.sync;
+const alarms = globalThis.browser?.alarms ?? globalThis.chrome?.alarms;
+const tabs = globalThis.browser?.tabs ?? globalThis.chrome?.tabs;
+
+const REFRESH_INTERVAL_MINUTES = 2 / 60; // 2 seconds
 
 runtime?.onInstalled?.addListener(async ({ reason }) => {
   if (reason !== 'install' || !storage) {
@@ -13,6 +18,42 @@ runtime?.onInstalled?.addListener(async ({ reason }) => {
     ...DEFAULT_PREFERENCES,
     ...existing
   });
+
+  await setupRefreshAlarm();
+});
+
+runtime?.onStartup?.addListener?.(() => {
+  setupRefreshAlarm().catch(() => {});
+});
+
+async function setupRefreshAlarm() {
+  if (!alarms) return;
+
+  try {
+    const existing = await alarms.getAll?.();
+    const hasAlarm = existing?.some?.(a => a.name === 'mdReaderAutoRefresh');
+    if (!hasAlarm) {
+      await alarms.create('mdReaderAutoRefresh', {
+        periodInMinutes: Math.max(REFRESH_INTERVAL_MINUTES, 1 / 60) // Chrome minimum ~1s
+      });
+    }
+  } catch {
+    // alarms may not be available in all environments
+  }
+}
+
+// Alarm fires → query all file:// tabs → ask each content script to check for changes.
+// Content script computes hash locally and re-renders if the file changed.
+alarms?.onAlarm?.addListener?.((alarm) => {
+  if (alarm.name !== 'mdReaderAutoRefresh') return;
+
+  tabs?.query?.({ url: 'file://*' }, (fileTabs) => {
+    fileTabs?.forEach?.((tab) => {
+      if (!tab.id) return;
+      tabs?.sendMessage?.(tab.id, { action: 'checkFileChange' })
+        .catch(() => {}); // tab may not have content script or no listener
+    });
+  });
 });
 
 runtime?.onMessage?.addListener?.((message, _sender, sendResponse) => {
@@ -21,5 +62,87 @@ runtime?.onMessage?.addListener?.((message, _sender, sendResponse) => {
     sendResponse?.({ success: true });
     return true;
   }
+  if (message?.action === 'readMarkdownSource') {
+    readMarkdownSource(_sender)
+      .then(sendResponse)
+      .catch((error) => sendResponse?.({ success: false, error: error?.message || String(error) }));
+    return true;
+  }
   return false;
 });
+
+async function readMarkdownSource(sender) {
+  const sourceUrl = sender?.tab?.url;
+
+  if (!isRefreshableFileUrl(sourceUrl)) {
+    return { success: false, error: 'Unsupported Markdown source URL' };
+  }
+
+  // Primary: try fetch from background service worker.
+  // Works if user enabled "Allow access to file URLs" in chrome://extensions.
+  try {
+    const response = await fetch(sourceUrl, { cache: 'no-store' });
+    if (response.ok) {
+      return { success: true, markdown: await response.text() };
+    }
+  } catch {
+    // fetch fails for file:// URLs without explicit permission — fall through
+  }
+
+  // Fallback: use offscreen document to read file via XHR.
+  // Offscreen documents run in chrome-extension:// context and can access file:// URLs.
+  try {
+    await ensureOffscreenDocument();
+    const response = await runtime.sendMessage({
+      action: 'fetchFileContent',
+      url: sourceUrl
+    });
+    if (response?.success) {
+      return response;
+    }
+    return { success: false, error: response?.error || 'Offscreen read failed' };
+  } catch (error) {
+    return { success: false, error: error?.message || 'Failed to read file' };
+  }
+}
+
+let offscreenCreating = null;
+
+async function ensureOffscreenDocument() {
+  const offscreen = globalThis.chrome?.offscreen;
+  if (!offscreen) return;
+
+  // Check if offscreen document already exists
+  try {
+    const contexts = await runtime.getContexts?.({
+      contextTypes: ['OFFSCREEN_DOCUMENT']
+    });
+    if (contexts?.length > 0) return;
+  } catch {
+    // getContexts may not be available in older Chrome versions
+  }
+
+  if (offscreenCreating) {
+    await offscreenCreating;
+    return;
+  }
+
+  offscreenCreating = offscreen.createDocument({
+    url: 'offscreen.html',
+    reasons: ['LOCAL_STORAGE'],
+    justification: 'Read local markdown files for auto-refresh'
+  }).catch(() => {
+    // Document may already exist
+  });
+
+  await offscreenCreating;
+  offscreenCreating = null;
+}
+
+function isRefreshableFileUrl(url) {
+  try {
+    return new URL(url).protocol === 'file:' && isMarkdownUrl(url);
+  } catch {
+    return false;
+  }
+}

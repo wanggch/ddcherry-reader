@@ -4,11 +4,10 @@
   "version": "0.1.0",
   "description": "__MSG_extensionDescription__",
   "default_locale": "zh_CN",
-  "permissions": ["storage"],
+  "permissions": ["storage", "alarms", "offscreen"],
   "host_permissions": ["file:///*", "http://*/*", "https://*/*"],
   "background": {
-    "service_worker": "assets/background.js",
-    "type": "module"
+    "service_worker": "assets/background.js"
   },
   "content_scripts": [
     {
