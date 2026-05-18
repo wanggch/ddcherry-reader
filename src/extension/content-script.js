@@ -813,14 +813,25 @@ async function injectCustomCss(imports) {
   await Promise.all(imports.map(async (importPath) => {
     try {
       const href = new URL(importPath, window.location.href).href;
-      const response = await fetch(href, { cache: 'no-store' });
-      if (!response.ok) {
-        return;
+      let cssText;
+
+      if (window.location.protocol === 'file:') {
+        // Use background to fetch file:// CSS to avoid CORS errors in content script
+        const response = await sendRuntimeMessage(
+          globalThis.chrome?.runtime ?? globalThis.browser?.runtime,
+          { action: 'readFileContent', url: href }
+        );
+        if (!response?.success) return;
+        cssText = response.content;
+      } else {
+        const response = await fetch(href, { cache: 'no-store' });
+        if (!response.ok) return;
+        cssText = await response.text();
       }
 
       const style = document.createElement('style');
       style.dataset.mdReaderCustomCss = href;
-      style.textContent = await response.text();
+      style.textContent = cssText;
       document.head.append(style);
     } catch {
       // Custom CSS is optional; rendering should not fail when it is unavailable.

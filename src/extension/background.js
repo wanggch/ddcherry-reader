@@ -68,6 +68,12 @@ runtime?.onMessage?.addListener?.((message, _sender, sendResponse) => {
       .catch((error) => sendResponse?.({ success: false, error: error?.message || String(error) }));
     return true;
   }
+  if (message?.action === 'readFileContent') {
+    readFileContent(message.url)
+      .then(sendResponse)
+      .catch((error) => sendResponse?.({ success: false, error: error?.message || String(error) }));
+    return true;
+  }
   return false;
 });
 
@@ -86,6 +92,22 @@ async function readMarkdownSource(sender) {
   return {
     success: true,
     markdown: await response.text()
+  };
+}
+
+async function readFileContent(url) {
+  if (!url || !url.startsWith('file://')) {
+    return { success: false, error: 'Invalid file URL' };
+  }
+
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) {
+    return { success: false, error: `Read failed: ${response.status}` };
+  }
+
+  return {
+    success: true,
+    content: await response.text()
   };
 }
 
