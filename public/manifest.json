@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "__MSG_extensionDescription__",
   "default_locale": "zh_CN",
-  "permissions": ["storage", "alarms", "offscreen"],
+  "permissions": ["storage", "alarms"],
   "host_permissions": ["file:///*", "http://*/*", "https://*/*"],
   "background": {
     "service_worker": "assets/background.js"

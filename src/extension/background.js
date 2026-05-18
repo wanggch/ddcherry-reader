@@ -78,65 +78,15 @@ async function readMarkdownSource(sender) {
     return { success: false, error: 'Unsupported Markdown source URL' };
   }
 
-  // Primary: try fetch from background service worker.
-  // Works if user enabled "Allow access to file URLs" in chrome://extensions.
-  try {
-    const response = await fetch(sourceUrl, { cache: 'no-store' });
-    if (response.ok) {
-      return { success: true, markdown: await response.text() };
-    }
-  } catch {
-    // fetch fails for file:// URLs without explicit permission — fall through
+  const response = await fetch(sourceUrl, { cache: 'no-store' });
+  if (!response.ok) {
+    return { success: false, error: `Read failed: ${response.status}` };
   }
 
-  // Fallback: use offscreen document to read file via XHR.
-  // Offscreen documents run in chrome-extension:// context and can access file:// URLs.
-  try {
-    await ensureOffscreenDocument();
-    const response = await runtime.sendMessage({
-      action: 'fetchFileContent',
-      url: sourceUrl
-    });
-    if (response?.success) {
-      return response;
-    }
-    return { success: false, error: response?.error || 'Offscreen read failed' };
-  } catch (error) {
-    return { success: false, error: error?.message || 'Failed to read file' };
-  }
-}
-
-let offscreenCreating = null;
-
-async function ensureOffscreenDocument() {
-  const offscreen = globalThis.chrome?.offscreen;
-  if (!offscreen) return;
-
-  // Check if offscreen document already exists
-  try {
-    const contexts = await runtime.getContexts?.({
-      contextTypes: ['OFFSCREEN_DOCUMENT']
-    });
-    if (contexts?.length > 0) return;
-  } catch {
-    // getContexts may not be available in older Chrome versions
-  }
-
-  if (offscreenCreating) {
-    await offscreenCreating;
-    return;
-  }
-
-  offscreenCreating = offscreen.createDocument({
-    url: 'offscreen.html',
-    reasons: ['LOCAL_STORAGE'],
-    justification: 'Read local markdown files for auto-refresh'
-  }).catch(() => {
-    // Document may already exist
-  });
-
-  await offscreenCreating;
-  offscreenCreating = null;
+  return {
+    success: true,
+    markdown: await response.text()
+  };
 }
 
 function isRefreshableFileUrl(url) {
