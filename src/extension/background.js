@@ -6,110 +6,143 @@ const storage = globalThis.browser?.storage?.sync ?? globalThis.chrome?.storage?
 const alarms = globalThis.browser?.alarms ?? globalThis.chrome?.alarms;
 const tabs = globalThis.browser?.tabs ?? globalThis.chrome?.tabs;
 
-const REFRESH_INTERVAL_MINUTES = 2 / 60; // 2 seconds
+// ── Install & Startup ──
 
 runtime?.onInstalled?.addListener(async ({ reason }) => {
-  if (reason !== 'install' || !storage) {
-    return;
-  }
+  if (reason !== 'install' || !storage) return;
 
   const existing = await storage.get(Object.keys(DEFAULT_PREFERENCES));
-  await storage.set({
-    ...DEFAULT_PREFERENCES,
-    ...existing
-  });
-
-  await setupRefreshAlarm();
+  await storage.set({ ...DEFAULT_PREFERENCES, ...existing });
+  setupRefreshAlarm();
 });
 
 runtime?.onStartup?.addListener?.(() => {
-  setupRefreshAlarm().catch(() => {});
+  setupRefreshAlarm();
 });
 
-async function setupRefreshAlarm() {
-  if (!alarms) return;
+setupRefreshAlarm();
+
+// ── Alarm: periodic check ──
+
+function setupRefreshAlarm() {
+  if (!alarms?.getAll) return;
 
   try {
-    const existing = await alarms.getAll?.();
-    const hasAlarm = existing?.some?.(a => a.name === 'mdReaderAutoRefresh');
-    if (!hasAlarm) {
-      await alarms.create('mdReaderAutoRefresh', {
-        periodInMinutes: Math.max(REFRESH_INTERVAL_MINUTES, 1 / 60) // Chrome minimum ~1s
-      });
+    const result = alarms.getAll((existing) => {
+      const hasAlarm = existing?.some?.((a) => a.name === 'mdReaderAutoRefresh');
+      if (!hasAlarm) {
+        alarms.create('mdReaderAutoRefresh', { periodInMinutes: 0.5 });
+      }
+    });
+    // If getAll returns a promise (Firefox / newer Chrome), handle it
+    if (result && typeof result.then === 'function') {
+      result.then((existing) => {
+        const hasAlarm = existing?.some?.((a) => a.name === 'mdReaderAutoRefresh');
+        if (!hasAlarm) {
+          alarms.create('mdReaderAutoRefresh', { periodInMinutes: 0.5 });
+        }
+      }).catch(() => {});
     }
   } catch {
-    // alarms may not be available in all environments
+    // ignore
   }
 }
 
 // Alarm fires → query all file:// tabs → ask each content script to check for changes.
-// Content script computes hash locally and re-renders if the file changed.
 alarms?.onAlarm?.addListener?.((alarm) => {
   if (alarm.name !== 'mdReaderAutoRefresh') return;
-
-  tabs?.query?.({ url: 'file://*' }, (fileTabs) => {
-    fileTabs?.forEach?.((tab) => {
-      if (!tab.id) return;
-      tabs?.sendMessage?.(tab.id, { action: 'checkFileChange' })
-        .catch(() => {}); // tab may not have content script or no listener
-    });
-  });
+  notifyFileTabs();
 });
 
-runtime?.onMessage?.addListener?.((message, _sender, sendResponse) => {
+function notifyFileTabs() {
+  if (!tabs?.query) return;
+
+  try {
+    const result = tabs.query({ url: 'file://*' }, (fileTabs) => {
+      (fileTabs ?? []).forEach((tab) => {
+        if (!tab.id) return;
+        try {
+          tabs.sendMessage(tab.id, { action: 'checkFileChange' }, () => {
+            // ignore errors — tab may not have content script
+            void chrome?.runtime?.lastError;
+          });
+        } catch {
+          // ignore
+        }
+      });
+    });
+    // If query returns a promise (Firefox / newer Chrome)
+    if (result && typeof result.then === 'function') {
+      result.then((fileTabs) => {
+        (fileTabs ?? []).forEach((tab) => {
+          if (!tab.id) return;
+          tabs.sendMessage(tab.id, { action: 'checkFileChange' }).catch(() => {});
+        });
+      }).catch(() => {});
+    }
+  } catch {
+    // ignore
+  }
+}
+
+// ── Message handling ──
+
+runtime?.onMessage?.addListener?.((message, sender, sendResponse) => {
   if (message?.action === 'openOptionsPage') {
     runtime?.openOptionsPage?.();
     sendResponse?.({ success: true });
     return true;
   }
+
   if (message?.action === 'readMarkdownSource') {
-    readMarkdownSource(_sender)
-      .then(sendResponse)
-      .catch((error) => sendResponse?.({ success: false, error: error?.message || String(error) }));
+    const url = sender?.tab?.url;
+    if (!url || !isRefreshableFileUrl(url)) {
+      sendResponse({ success: false, error: 'Not a refreshable file URL' });
+      return true;
+    }
+
+    const cleanUrl = url.split('#')[0];
+    fetch(cleanUrl, { cache: 'reload' })
+      .then(async (response) => {
+        if (!response.ok) {
+          sendResponse({ success: false, error: `HTTP ${response.status}` });
+          return;
+        }
+        const text = await response.text();
+        sendResponse({ success: true, markdown: text });
+      })
+      .catch((error) => {
+        sendResponse({ success: false, error: String(error?.message || error) });
+      });
+
     return true;
   }
+
   if (message?.action === 'readFileContent') {
-    readFileContent(message.url)
-      .then(sendResponse)
-      .catch((error) => sendResponse?.({ success: false, error: error?.message || String(error) }));
+    const url = message?.url;
+    if (!url || !url.startsWith('file://')) {
+      sendResponse({ success: false, error: 'Invalid file URL' });
+      return true;
+    }
+
+    fetch(url, { cache: 'reload' })
+      .then(async (response) => {
+        if (!response.ok) {
+          sendResponse({ success: false, error: `HTTP ${response.status}` });
+          return;
+        }
+        const text = await response.text();
+        sendResponse({ success: true, content: text });
+      })
+      .catch((error) => {
+        sendResponse({ success: false, error: String(error?.message || error) });
+      });
+
     return true;
   }
+
   return false;
 });
-
-async function readMarkdownSource(sender) {
-  const sourceUrl = sender?.tab?.url;
-
-  if (!isRefreshableFileUrl(sourceUrl)) {
-    return { success: false, error: 'Unsupported Markdown source URL' };
-  }
-
-  const response = await fetch(sourceUrl, { cache: 'no-store' });
-  if (!response.ok) {
-    return { success: false, error: `Read failed: ${response.status}` };
-  }
-
-  return {
-    success: true,
-    markdown: await response.text()
-  };
-}
-
-async function readFileContent(url) {
-  if (!url || !url.startsWith('file://')) {
-    return { success: false, error: 'Invalid file URL' };
-  }
-
-  const response = await fetch(url, { cache: 'no-store' });
-  if (!response.ok) {
-    return { success: false, error: `Read failed: ${response.status}` };
-  }
-
-  return {
-    success: true,
-    content: await response.text()
-  };
-}
 
 function isRefreshableFileUrl(url) {
   try {

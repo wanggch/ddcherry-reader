@@ -45,6 +45,7 @@ let currentDirEntry = null;
 let currentMdTree = [];
 let currentMdFiles = [];
 let currentFileName = '';
+let currentFileEntry = null;
 let hasFolderTab = false;
 let dropHandlerAbortController = null;
 
@@ -283,6 +284,7 @@ function setupDropHandler(root) {
 
     const dirEntry = dirItem.webkitGetAsEntry();
     currentDirEntry = dirEntry;
+    currentFileEntry = null;
 
     addFolderTab(root);
     await switchToTab(root, 'folder');
@@ -416,6 +418,7 @@ function bindFileTreeEvents(root, panel) {
         originalMarkdown = content;
         lastContentHash = computeHash(content);
         currentFileName = fileEntry.name;
+        currentFileEntry = fileEntry.entry;
         await renderReader(content);
       } catch (err) {
         panel.insertAdjacentHTML('afterbegin', `<div class="md-reader-folder-error">无法打开文件：${escapeHtml(err.message)}</div>`);
@@ -694,16 +697,40 @@ async function refreshFromSource(preserveScroll = false) {
 }
 
 async function readMarkdownSource() {
+  if (currentFileEntry) {
+    return readFileEntryContent(currentFileEntry);
+  }
+
   if (window.location.protocol === 'file:') {
+    // Primary: XHR directly (works on file:// pages, status 0 = success)
+    try {
+      return await readFileViaXHR(window.location.href);
+    } catch {
+      // Fallback: ask background service worker
+    }
     return readLocalMarkdownSourceFromBackground();
   }
 
-  const response = await fetch(window.location.href, { cache: 'no-store' });
-  if (!response.ok) {
-    throw new Error(`Refresh failed: ${response.status}`);
-  }
+  return fetchMarkdownText(window.location.href);
+}
 
-  return response.text();
+function readFileViaXHR(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'text';
+    xhr.onload = () => {
+      if (xhr.status === 0 || xhr.status === 200) {
+        resolve(xhr.responseText);
+      } else {
+        reject(new Error(`XHR failed: ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('XHR network error'));
+    xhr.ontimeout = () => reject(new Error('XHR timeout'));
+    xhr.timeout = 5000;
+    xhr.send();
+  });
 }
 
 async function readLocalMarkdownSourceFromBackground() {
@@ -712,12 +739,34 @@ async function readLocalMarkdownSourceFromBackground() {
     throw new Error('Extension runtime messaging is unavailable');
   }
 
-  const response = await sendRuntimeMessage(runtime, { action: 'readMarkdownSource' });
+  const response = await sendRuntimeMessage(runtime, {
+    action: 'readMarkdownSource',
+    url: window.location.href
+  });
   if (response?.success && typeof response.markdown === 'string') {
     return response.markdown;
   }
 
   throw new Error(response?.error || 'Failed to read local Markdown source');
+}
+
+async function fetchMarkdownText(url) {
+  const response = await fetch(withCacheBust(url), {
+    cache: 'no-store',
+    credentials: 'same-origin'
+  });
+  if (!response.ok) {
+    throw new Error(`Refresh failed: ${response.status}`);
+  }
+
+  return response.text();
+}
+
+function withCacheBust(url) {
+  const nextUrl = new URL(url, window.location.href);
+  nextUrl.hash = '';
+  nextUrl.searchParams.set('md_reader_refresh', `${Date.now()}`);
+  return nextUrl.href;
 }
 
 function sendRuntimeMessage(runtime, message) {
@@ -754,25 +803,12 @@ async function refreshWithMarkdown(nextMarkdown, newHash, preserveScroll = false
       return;
     }
 
-    // Remove URL hash before re-rendering to prevent Chrome from triggering
-    // "Unsafe attempt to load URL" warnings on file:// pages when it tries
-    // to navigate to the hash fragment in the newly created DOM.
-    const currentHash = window.location.hash;
-    if (currentHash && window.location.protocol === 'file:') {
-      history.replaceState(null, '', window.location.pathname);
-    }
-
     lastContentHash = newHash;
     originalMarkdown = nextMarkdown;
     await renderReader(nextMarkdown);
 
     if (savedPosition) {
       restoreScrollPosition(savedPosition);
-    }
-
-    // Restore the hash after scroll position is set
-    if (currentHash && window.location.protocol === 'file:') {
-      history.replaceState(null, '', window.location.pathname + currentHash);
     }
   } catch {
     if (preserveScroll) {
