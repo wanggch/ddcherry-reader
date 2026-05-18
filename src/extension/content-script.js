@@ -631,15 +631,38 @@ function setupBackgroundMessageListener() {
 
 async function checkFileChange() {
   if (isRefreshing) return { changed: false };
-  if (window.location.protocol !== 'file:') {
-    if (!preferences.autoRefresh) return { changed: false };
+
+  if (window.location.protocol === 'file:') {
+    try {
+      // If a folder file is selected, read from that entry directly
+      const text = currentFileEntry
+        ? await readFileEntryContent(currentFileEntry)
+        : await readLocalMarkdownSourceFromBackground();
+      const hash = computeHash(text);
+
+      if (lastContentHash === null) {
+        lastContentHash = hash;
+        return { changed: false };
+      }
+
+      if (hash !== lastContentHash) {
+        await refreshWithMarkdown(text, hash, true);
+        return { changed: true };
+      }
+
+      return { changed: false };
+    } catch {
+      return { changed: false };
+    }
   }
+
+  // For http/https URLs
+  if (!preferences.autoRefresh) return { changed: false };
 
   try {
     const text = await readMarkdownSource();
     const hash = computeHash(text);
 
-    // First check: just initialize the hash without triggering a re-render.
     if (lastContentHash === null) {
       lastContentHash = hash;
       return { changed: false };
@@ -702,35 +725,10 @@ async function readMarkdownSource() {
   }
 
   if (window.location.protocol === 'file:') {
-    // Primary: XHR directly (works on file:// pages, status 0 = success)
-    try {
-      return await readFileViaXHR(window.location.href);
-    } catch {
-      // Fallback: ask background service worker
-    }
     return readLocalMarkdownSourceFromBackground();
   }
 
   return fetchMarkdownText(window.location.href);
-}
-
-function readFileViaXHR(url) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-    xhr.responseType = 'text';
-    xhr.onload = () => {
-      if (xhr.status === 0 || xhr.status === 200) {
-        resolve(xhr.responseText);
-      } else {
-        reject(new Error(`XHR failed: ${xhr.status}`));
-      }
-    };
-    xhr.onerror = () => reject(new Error('XHR network error'));
-    xhr.ontimeout = () => reject(new Error('XHR timeout'));
-    xhr.timeout = 5000;
-    xhr.send();
-  });
 }
 
 async function readLocalMarkdownSourceFromBackground() {
