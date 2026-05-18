@@ -754,12 +754,25 @@ async function refreshWithMarkdown(nextMarkdown, newHash, preserveScroll = false
       return;
     }
 
+    // Remove URL hash before re-rendering to prevent Chrome from triggering
+    // "Unsafe attempt to load URL" warnings on file:// pages when it tries
+    // to navigate to the hash fragment in the newly created DOM.
+    const currentHash = window.location.hash;
+    if (currentHash && window.location.protocol === 'file:') {
+      history.replaceState(null, '', window.location.pathname);
+    }
+
     lastContentHash = newHash;
     originalMarkdown = nextMarkdown;
     await renderReader(nextMarkdown);
 
     if (savedPosition) {
       restoreScrollPosition(savedPosition);
+    }
+
+    // Restore the hash after scroll position is set
+    if (currentHash && window.location.protocol === 'file:') {
+      history.replaceState(null, '', window.location.pathname + currentHash);
     }
   } catch {
     if (preserveScroll) {
