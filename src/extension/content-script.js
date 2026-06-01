@@ -204,7 +204,6 @@ function mountReader(result) {
       void switchToTab(root, 'folder');
     }
   }
-  injectPrintHeader();
   updateProgress();
 }
 
@@ -951,16 +950,6 @@ function showLoader() {
   `;
   document.body.append(el);
   return el;
-}
-
-function injectPrintHeader() {
-  document.querySelectorAll('.md-reader-print-header').forEach((el) => el.remove());
-
-  const header = document.createElement('div');
-  header.className = 'md-reader-print-header';
-  header.textContent = document.title || 'Markdown Reader Pro';
-
-  document.body.append(header);
 }
 
 function applyLazyLoading() {

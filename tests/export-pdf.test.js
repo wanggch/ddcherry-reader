@@ -79,15 +79,6 @@ describe('export pdf', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders a print header with the document title', async () => {
-    await import('../src/extension/content-script.js');
-    await waitUntil(() => document.querySelector('.md-reader-print-header'));
-
-    const header = document.querySelector('.md-reader-print-header');
-    expect(header).not.toBeNull();
-    expect(header.textContent).toBe('Hello');
-  });
-
   it('triggers window.print when export button is clicked', async () => {
     await import('../src/extension/content-script.js');
     await waitUntil(() => document.querySelector('[data-action="export-pdf"]'));
