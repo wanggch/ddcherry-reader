@@ -1409,4 +1409,32 @@ body {
     box-shadow: none;
   }
 
+  /* Prevent code blocks, tables, images, diagrams, and blockquotes from being split across pages */
+  .md-reader-content pre,
+  .md-reader-content table,
+  .md-reader-content img,
+  .md-reader-content .mermaid,
+  .md-reader-content blockquote {
+    page-break-inside: avoid;
+  }
+
+  /* Keep headings with the content that follows them */
+  .md-reader-content h1,
+  .md-reader-content h2,
+  .md-reader-content h3,
+  .md-reader-content h4 {
+    page-break-after: avoid;
+  }
+
+  /* Control paragraph widow/orphan lines */
+  .md-reader-content p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* Keep table rows and list items intact */
+  .md-reader-content tr,
+  .md-reader-content li {
+    page-break-inside: avoid;
+  }
 }
