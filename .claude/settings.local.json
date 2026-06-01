@@ -6,7 +6,9 @@
       "Bash(grep:*)",
       "Bash(npm run:*)",
       "Bash(node:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npx vitest:*)",
+      "Bash(git add *)"
     ]
   }
 }

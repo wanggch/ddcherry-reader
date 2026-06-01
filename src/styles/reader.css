@@ -442,14 +442,14 @@ body {
    ============================================================ */
 .md-reader-shell {
   display: grid;
-  grid-template-columns: minmax(200px, 280px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
   gap: 28px;
   width: min(1280px, calc(100% - 48px));
   margin: 28px auto 80px;
 }
 
 .md-reader--toc-right .md-reader-shell {
-  grid-template-columns: minmax(0, 1fr) minmax(200px, 280px);
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
 }
 
 .md-reader--toc-right .md-reader-sidebar {
@@ -471,9 +471,12 @@ body {
    Sidebar
    ============================================================ */
 .md-reader-sidebar {
+  box-sizing: border-box;
   position: sticky;
   top: 76px;
   align-self: start;
+  width: 100%;
+  max-width: 320px;
   max-height: calc(100vh - 96px);
   padding: 18px;
   overflow: auto;
@@ -586,6 +589,8 @@ body {
    ============================================================ */
 .md-reader-sidebar-panels {
   position: relative;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .md-reader-sidebar-panel {
@@ -703,6 +708,8 @@ body {
   font-size: 12px;
   font-weight: 600;
   user-select: none;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .md-reader-tree-icon {
@@ -740,6 +747,8 @@ body {
   cursor: pointer;
   transition: all var(--md-reader-transition);
   user-select: none;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .md-reader-file-item:hover {
