@@ -1385,6 +1385,10 @@ body {
 /* ============================================================
    Print
    ============================================================ */
+.md-reader-print-header {
+  display: none;
+}
+
 @media print {
   .md-reader-toolbar,
   .md-reader-sidebar,
@@ -1407,5 +1411,23 @@ body {
     padding: 0;
     border: 0;
     box-shadow: none;
+  }
+
+  .md-reader-print-header {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--md-reader-muted);
+    border-bottom: 0.5px solid var(--md-reader-border);
+    padding-bottom: 8px;
+  }
+
+  @page {
+    margin-top: 1.8cm;
+    margin-bottom: 1cm;
   }
 }
