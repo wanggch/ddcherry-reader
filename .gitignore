@@ -3,3 +3,15 @@ dist/
 release/
 coverage/
 .DS_Store
+*.log
+.vscode/settings.json
+packages/*/dist/
+packages/*/release/
+packages/desktop/src-tauri/target/
+packages/desktop/src-tauri/gen/
+
+# Machine-local AI tooling
+.claude/settings.local.json
+.claude/skills/
+.claude/worktrees/
+.agents/skills/

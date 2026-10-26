@@ -1,0 +1,558 @@
+/* ============================================================
+   Reading content — measure, rhythm, markdown components
+   ============================================================ */
+
+.md-reader-content {
+  box-sizing: border-box;
+  width: min(100%, var(--md-reader-content-measure, 42rem));
+  min-width: 0;
+  margin: 0 auto;
+  padding: var(--md-reader-space-10) clamp(20px, 4vw, 48px);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: var(--md-reader-font-size, 16px);
+  font-family: var(--md-reader-font-reading);
+  line-height: var(--md-reader-content-leading, 1.75);
+  overflow-wrap: break-word;
+  color: var(--md-reader-text);
+}
+
+/* Comfortable full-width still caps measure unless ultra-wide needed */
+.md-reader--layout-full .md-reader-content {
+  width: min(100%, 52rem);
+}
+
+.md-reader--layout-full.md-reader--sidebar-hidden .md-reader-content {
+  width: min(100%, 56rem);
+}
+
+/* Source mode: code reads better with a much wider measure */
+.md-reader--source .md-reader-content {
+  width: min(100%, 68rem);
+}
+
+.md-reader--source.md-reader--layout-full .md-reader-content,
+.md-reader--source.md-reader--sidebar-hidden .md-reader-content {
+  width: min(100%, 78rem);
+}
+
+.md-reader-content > :first-child { margin-top: 0; }
+.md-reader-content > :last-child { margin-bottom: 0; }
+
+.md-reader-content pre,
+.md-reader-content .mermaid,
+.md-reader-content .md-reader-frontmatter {
+  max-width: 100%;
+}
+
+.md-reader-content .md-reader-frontmatter {
+  overflow-x: auto;
+}
+
+/* ------------------------------------------------------------
+   Headings
+   ------------------------------------------------------------ */
+.md-reader-content h1,
+.md-reader-content h2,
+.md-reader-content h3,
+.md-reader-content h4,
+.md-reader-content h5,
+.md-reader-content h6 {
+  scroll-margin-top: calc(var(--md-reader-chrome-height, 44px) + 16px);
+  line-height: 1.3;
+  font-weight: 650;
+  color: var(--md-reader-text);
+}
+
+.md-reader-content h1 {
+  position: relative;
+  margin: 0.2em 0 0.75em;
+  padding-bottom: 0.4em;
+  font-size: 1.85em;
+  letter-spacing: -0.02em;
+  border-bottom: none;
+}
+
+/* Accent flourish under the page title */
+.md-reader-content h1::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 56px;
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--md-reader-accent), color-mix(in srgb, var(--md-reader-accent) 15%, transparent));
+}
+
+.md-reader-content h2 {
+  margin: 1.55em 0 0.55em;
+  font-size: 1.4em;
+  padding-bottom: 0.25em;
+  border-bottom: 1px solid var(--md-reader-border-subtle);
+}
+
+.md-reader-content h3 {
+  margin: 1.35em 0 0.45em;
+  font-size: 1.18em;
+}
+
+.md-reader-content h4,
+.md-reader-content h5,
+.md-reader-content h6 {
+  margin: 1.2em 0 0.4em;
+  font-size: 1.05em;
+}
+
+.md-reader-content .header-anchor {
+  opacity: 0;
+  margin-left: 0.25em;
+  color: var(--md-reader-muted) !important;
+  text-decoration: none !important;
+  transition: opacity var(--md-reader-transition), color var(--md-reader-transition);
+}
+
+.md-reader-content .header-anchor:hover {
+  color: var(--md-reader-accent) !important;
+}
+
+.md-reader-content h1:hover .header-anchor,
+.md-reader-content h2:hover .header-anchor,
+.md-reader-content h3:hover .header-anchor,
+.md-reader-content h4:hover .header-anchor,
+.md-reader-content h5:hover .header-anchor,
+.md-reader-content h6:hover .header-anchor,
+.md-reader-content .header-anchor:focus-visible {
+  opacity: 0.7;
+}
+
+/* ------------------------------------------------------------
+   Inline text — links, code-ish elements, marks
+   ------------------------------------------------------------ */
+.md-reader-content a {
+  color: var(--md-reader-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--md-reader-accent) 32%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  transition: color var(--md-reader-transition), text-decoration-color var(--md-reader-transition);
+}
+
+.md-reader-content a:hover {
+  text-decoration-color: var(--md-reader-accent);
+}
+
+.md-reader-content strong {
+  font-weight: 650;
+}
+
+.md-reader-content mark {
+  padding: 0.08em 0.25em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--md-reader-warning) 28%, transparent);
+  color: inherit;
+}
+
+.md-reader-content abbr[title] {
+  border-bottom: 1px dotted var(--md-reader-muted);
+  text-decoration: none;
+  cursor: help;
+}
+
+.md-reader-content kbd {
+  display: inline-block;
+  box-sizing: border-box;
+  padding: 0.12em 0.5em;
+  border: 1px solid var(--md-reader-border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--md-reader-panel);
+  box-shadow: none;
+  color: var(--md-reader-text);
+  font-family: var(--md-reader-font-mono);
+  font-size: 0.8em;
+  line-height: 1.5;
+  vertical-align: baseline;
+}
+
+/* ------------------------------------------------------------
+   Paragraphs, lists, rules
+   ------------------------------------------------------------ */
+.md-reader-content p {
+  margin: 0 0 1em;
+}
+
+.md-reader-content ul,
+.md-reader-content ol {
+  margin: 0 0 1em;
+  padding-left: 1.6em;
+}
+
+.md-reader-content li > ul,
+.md-reader-content li > ol {
+  margin: 0.25em 0 0;
+}
+
+.md-reader-content li + li {
+  margin-top: 0.25em;
+}
+
+.md-reader-content li::marker {
+  color: var(--md-reader-accent);
+  font-weight: 600;
+}
+
+.md-reader-content dl {
+  margin: 0 0 1em;
+}
+
+.md-reader-content dt {
+  font-weight: 650;
+  margin-top: 0.8em;
+}
+
+.md-reader-content dd {
+  margin-left: 1.6em;
+  color: var(--md-reader-muted);
+}
+
+.md-reader-content hr {
+  box-sizing: content-box;
+  height: 1px;
+  margin: 2.4em auto;
+  padding: 0;
+  border: none;
+  background: linear-gradient(90deg, transparent, var(--md-reader-border) 18%, var(--md-reader-border) 82%, transparent);
+}
+
+/* ------------------------------------------------------------
+   Blockquote
+   ------------------------------------------------------------ */
+.md-reader-content blockquote {
+  margin: 1.1em 0;
+  padding: 0.15em 0 0.15em 1.1em;
+  border-left: 3px solid var(--md-reader-accent);
+  border-radius: 0 var(--md-reader-radius-sm) var(--md-reader-radius-sm) 0;
+  background: color-mix(in srgb, var(--md-reader-accent-soft) 70%, transparent);
+  color: var(--md-reader-muted);
+}
+
+.md-reader-content blockquote > :first-child { margin-top: 0.4em; }
+.md-reader-content blockquote > :last-child { margin-bottom: 0.4em; }
+
+.md-reader-content blockquote blockquote {
+  border-left-color: var(--md-reader-border);
+  background: transparent;
+}
+
+/* ------------------------------------------------------------
+   Media
+   ------------------------------------------------------------ */
+.md-reader-content img {
+  box-sizing: border-box;
+  cursor: zoom-in;
+  border: 1px solid var(--md-reader-border-subtle);
+  border-radius: var(--md-reader-radius-sm);
+  transition: transform var(--md-reader-transition), box-shadow var(--md-reader-transition);
+  max-width: 100%;
+}
+
+.md-reader-content img:hover {
+  transform: scale(1.01);
+  box-shadow: var(--md-reader-shadow);
+}
+
+.md-reader-content video {
+  max-width: 100%;
+  border-radius: var(--md-reader-radius-sm);
+}
+
+/* ------------------------------------------------------------
+   Details / summary
+   ------------------------------------------------------------ */
+.md-reader-content details {
+  margin: 1em 0;
+  padding: 10px 16px;
+  border: 1px solid var(--md-reader-border-subtle);
+  border-radius: var(--md-reader-radius-sm);
+  background: var(--md-reader-panel);
+}
+
+.md-reader-content summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--md-reader-text);
+  user-select: none;
+}
+
+.md-reader-content summary::marker {
+  color: var(--md-reader-accent);
+}
+
+.md-reader-content details[open] summary {
+  margin-bottom: 0.5em;
+}
+
+/* ------------------------------------------------------------
+   Tables — row hairlines instead of a full grid
+   ------------------------------------------------------------ */
+.md-reader-table-wrap {
+  overflow-x: auto;
+  max-width: 100%;
+  margin: 1.15em 0;
+  border: 1px solid var(--md-reader-border-subtle);
+  border-radius: var(--md-reader-radius-sm);
+  background: var(--md-reader-panel);
+  box-shadow: var(--md-reader-shadow);
+}
+
+.md-reader-content table {
+  width: 100%;
+  min-width: 360px;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 0.92em;
+  line-height: 1.55;
+  color: var(--md-reader-text);
+}
+
+.md-reader-content thead {
+  background: color-mix(in srgb, var(--md-reader-bg) 70%, var(--md-reader-panel));
+}
+
+.md-reader-content th,
+.md-reader-content td {
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 1px solid var(--md-reader-border-subtle);
+  text-align: left;
+  vertical-align: top;
+}
+
+.md-reader-content th {
+  border-bottom: 2px solid var(--md-reader-border);
+  font-weight: 650;
+  font-size: 0.92em;
+  letter-spacing: 0.01em;
+  color: var(--md-reader-text);
+  white-space: nowrap;
+}
+
+.md-reader-content tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.md-reader-content tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--md-reader-bg) 35%, transparent);
+}
+
+.md-reader-content tbody tr {
+  transition: background var(--md-reader-transition);
+}
+
+.md-reader-content tbody tr:hover {
+  background: color-mix(in srgb, var(--md-reader-accent-soft) 55%, transparent);
+}
+
+.md-reader-content th[align="center"],
+.md-reader-content td[align="center"] { text-align: center; }
+.md-reader-content th[align="right"],
+.md-reader-content td[align="right"] { text-align: right; }
+
+/* Frontmatter rendered as a quiet meta block */
+.md-reader-content pre.md-reader-frontmatter {
+  background: color-mix(in srgb, var(--md-reader-bg) 55%, var(--md-reader-panel)) !important;
+  border: 1px dashed var(--md-reader-border) !important;
+}
+
+.md-reader-content pre.md-reader-frontmatter code {
+  color: var(--md-reader-muted);
+  font-size: 12.5px;
+}
+
+/* Source mode */
+.markdown-body .md-reader-source {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 65vh;
+  margin: 0;
+  padding: 16px;
+  white-space: pre;
+  word-break: normal;
+  overflow-x: auto;
+  font-family: var(--md-reader-font-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--md-reader-text);
+  background: var(--md-reader-code-bg);
+  border: 1px solid var(--md-reader-code-border);
+  border-radius: var(--md-reader-radius-sm);
+}
+
+/* Admonition */
+.admonition {
+  margin: 1.15em 0;
+  padding: 14px 18px;
+  border-left: 3px solid var(--md-reader-info);
+  border-radius: var(--md-reader-radius-sm);
+  background: color-mix(in srgb, var(--md-reader-info) 8%, var(--md-reader-panel));
+}
+
+.admonition-title {
+  margin: 0 0 6px;
+  font-weight: 700;
+  font-size: 0.92em;
+}
+
+.admonition.note,
+.admonition.info,
+.admonition.tip {
+  border-left-color: var(--md-reader-info);
+  background: color-mix(in srgb, var(--md-reader-info) 8%, var(--md-reader-panel));
+}
+
+.admonition.warning,
+.admonition.caution {
+  border-left-color: var(--md-reader-warning);
+  background: color-mix(in srgb, var(--md-reader-warning) 10%, var(--md-reader-panel));
+}
+
+.admonition.danger,
+.admonition.error {
+  border-left-color: var(--md-reader-danger);
+  background: color-mix(in srgb, var(--md-reader-danger) 9%, var(--md-reader-panel));
+}
+
+.admonition.success,
+.admonition.hint {
+  border-left-color: var(--md-reader-success);
+  background: color-mix(in srgb, var(--md-reader-success) 9%, var(--md-reader-panel));
+}
+
+/* Task list */
+.contains-task-list {
+  padding-left: 1.4em;
+}
+
+.task-list-item {
+  list-style: none;
+}
+
+.task-list-item-checkbox {
+  margin: 0 0.45em 0.2em -1.4em;
+  vertical-align: middle;
+  accent-color: var(--md-reader-accent);
+}
+
+/* Footnotes */
+.md-reader-content .footnotes {
+  margin-top: 2.5em;
+  padding-top: 1em;
+  border-top: 1px solid var(--md-reader-border-subtle);
+  font-size: 0.9em;
+  color: var(--md-reader-muted);
+}
+
+.md-reader-content .footnote-ref a,
+.md-reader-content .footnote-backref {
+  color: var(--md-reader-accent);
+  text-decoration: none;
+  opacity: 0.85;
+}
+
+.md-reader-content .footnote-ref a:hover,
+.md-reader-content .footnote-backref:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Fallback */
+.md-reader-fallback {
+  max-width: 960px;
+  margin: 40px auto;
+  padding: 28px;
+  border: 1px solid var(--md-reader-border);
+  border-radius: var(--md-reader-radius);
+  background: var(--md-reader-panel);
+}
+
+.md-reader-fallback h1 {
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+
+.md-reader-fallback pre {
+  padding: 16px;
+  border-radius: var(--md-reader-radius-sm);
+  background: var(--md-reader-code-bg);
+  border: 1px solid var(--md-reader-code-border);
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.md-reader-fallback textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 60vh;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--md-reader-border);
+  border-radius: var(--md-reader-radius-sm);
+  background: var(--md-reader-bg);
+  color: var(--md-reader-text);
+  font-family: var(--md-reader-font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+@media (max-width: 860px) {
+  .md-reader-toolbar {
+    align-items: center;
+    flex-direction: row;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .md-reader-toolbar__actions {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .md-reader-progress {
+    top: var(--md-reader-chrome-height, var(--md-reader-toolbar-height));
+  }
+
+  .md-reader-shell {
+    display: block;
+    width: min(100% - 20px, 760px);
+    margin-top: 16px;
+  }
+
+  .md-reader--layout-full .md-reader-shell {
+    width: calc(100% - 20px);
+  }
+
+  .md-reader-sidebar {
+    position: static;
+    max-height: 240px;
+    margin-bottom: 16px;
+    resize: none;
+    border: 1px solid var(--md-reader-border-subtle);
+    border-radius: var(--md-reader-radius-sm);
+    padding: 12px;
+  }
+
+  .md-reader-file-tree {
+    max-height: 160px;
+    overflow: auto;
+  }
+
+  .md-reader-content {
+    padding: 24px 16px;
+    width: 100%;
+  }
+}

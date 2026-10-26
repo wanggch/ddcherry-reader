@@ -1,0 +1,293 @@
+/* ============================================================
+   Overlays — Mermaid, lightbox, loader
+   ============================================================ */
+
+.md-reader-mermaid-frame {
+  position: relative;
+  margin: 24px 0;
+  border: 1px solid var(--md-reader-border-subtle);
+  border-radius: var(--md-reader-radius-sm);
+  background: var(--md-reader-panel);
+  padding: 8px;
+  overflow: auto;
+}
+
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0;
+  overflow: auto;
+}
+
+.md-reader-mermaid-frame .mermaid {
+  margin: 0;
+}
+
+.md-reader-mermaid-zoom {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--md-reader-border);
+  border-radius: var(--md-reader-radius-sm);
+  background: color-mix(in srgb, var(--md-reader-panel) 88%, transparent);
+  color: var(--md-reader-muted);
+  cursor: pointer;
+  opacity: 0;
+  box-shadow: var(--md-reader-shadow);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: opacity var(--md-reader-transition), border-color var(--md-reader-transition), color var(--md-reader-transition), background var(--md-reader-transition), transform var(--md-reader-transition);
+}
+
+.md-reader-mermaid-frame:hover .md-reader-mermaid-zoom,
+.md-reader-mermaid-zoom:focus-visible {
+  opacity: 1;
+}
+
+.md-reader-mermaid-zoom:hover {
+  border-color: var(--md-reader-accent);
+  background: var(--md-reader-accent-soft);
+  color: var(--md-reader-accent);
+}
+
+.md-reader-mermaid-zoom:active {
+  transform: scale(0.96);
+}
+
+.md-reader-mermaid-zoom:focus-visible {
+  outline: 2px solid var(--md-reader-accent);
+  outline-offset: 2px;
+}
+
+.mermaid-error {
+  display: block;
+  padding: 14px;
+  border: 1px solid var(--md-reader-danger);
+  border-radius: var(--md-reader-radius-sm);
+  color: var(--md-reader-danger);
+  white-space: pre-wrap;
+  font-family: var(--md-reader-font-mono);
+  font-size: 13px;
+  background: color-mix(in srgb, var(--md-reader-danger) 8%, transparent);
+}
+
+.md-reader-mermaid-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.82);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.md-reader-mermaid-viewer:not([hidden]) {
+  opacity: 1;
+  visibility: visible;
+}
+
+.md-reader-mermaid-viewer__canvas {
+  box-sizing: border-box;
+  display: grid;
+  place-items: safe center;
+  width: min(1680px, 98vw);
+  height: min(1040px, 92vh);
+  overflow: hidden;
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--md-reader-radius);
+  background: var(--md-reader-panel);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+}
+
+.md-reader-mermaid-viewer__diagram {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.md-reader-mermaid-viewer__diagram svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.md-reader-mermaid-viewer__close {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--md-reader-radius-sm);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color var(--md-reader-transition), background var(--md-reader-transition), transform var(--md-reader-transition);
+}
+
+.md-reader-mermaid-viewer__close:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.md-reader-mermaid-viewer__close:active {
+  transform: scale(0.96);
+}
+
+.md-reader-mermaid-viewer__close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Lightbox */
+.md-reader-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.md-reader-lightbox:not([hidden]) {
+  opacity: 1;
+  visibility: visible;
+}
+
+.md-reader-lightbox-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.md-reader-lightbox-toolbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+
+.md-reader-lightbox-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.md-reader-lightbox-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.md-reader-lightbox-actions button,
+.md-reader-lightbox-zoom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--md-reader-radius-sm);
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--md-reader-transition);
+}
+
+.md-reader-lightbox-actions button:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.md-reader-lightbox-actions button:active {
+  transform: scale(0.95);
+}
+
+.md-reader-lightbox-zoom {
+  cursor: default;
+  font-variant-numeric: tabular-nums;
+}
+
+.md-reader-lightbox-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  padding: 24px;
+}
+
+.md-reader-lightbox-stage img {
+  max-width: min(1100px, 92vw);
+  max-height: 82vh;
+  border-radius: var(--md-reader-radius);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  transform: scale(var(--md-reader-lightbox-scale, 1));
+  transition: transform 0.2s ease;
+  cursor: grab;
+}
+
+/* Loading */
+#md-reader-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  background: var(--md-reader-bg);
+  color: var(--md-reader-muted);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: var(--md-reader-font-ui);
+}
+
+.md-reader-loader__spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--md-reader-border);
+  border-top-color: var(--md-reader-accent);
+  border-radius: 50%;
+  animation: md-reader-spin 0.8s linear infinite;
+}
+
+@keyframes md-reader-spin {
+  to { transform: rotate(360deg); }
+}

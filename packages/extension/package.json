@@ -1,0 +1,28 @@
+{
+  "name": "@md-reader/extension",
+  "version": "0.1.0",
+  "description": "A Manifest V3 browser extension that renders Markdown files as GitHub-style reading pages.",
+  "type": "module",
+  "scripts": {
+    "clean": "rimraf dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "npm run clean && node scripts/build.mjs",
+    "package": "npm run build && node scripts/package-extension.mjs"
+  },
+  "dependencies": {
+    "@md-reader/core": "workspace:*",
+    "webextension-polyfill": "^0.12.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "esbuild": "^0.21.5",
+    "jsdom": "^25.0.1",
+    "rimraf": "^6.0.1",
+    "vite": "^5.4.8",
+    "vitest": "^2.1.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

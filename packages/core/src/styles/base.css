@@ -1,0 +1,93 @@
+/* ============================================================
+   Base document styles
+   ============================================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--md-reader-bg);
+  color: var(--md-reader-text);
+  font-size: var(--md-reader-font-size, 16px);
+  line-height: var(--md-reader-content-leading, 1.75);
+  font-family: var(--md-reader-font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--md-reader-selection);
+}
+
+.markdown-body {
+  font-family: var(--md-reader-font-reading);
+  line-height: var(--md-reader-content-leading, 1.75);
+}
+
+.markdown-body pre,
+.markdown-body code,
+.markdown-body kbd,
+.markdown-body samp,
+.markdown-body tt {
+  font-family: var(--md-reader-font-mono);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--md-reader-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--md-reader-muted);
+}
+
+/* Theme cross-fade (enabled briefly via .md-reader-theme-animating) */
+html.md-reader-theme-animating,
+html.md-reader-theme-animating body,
+html.md-reader-theme-animating .md-reader,
+html.md-reader-theme-animating .md-reader-toolbar,
+html.md-reader-theme-animating .md-reader-tabs-host,
+html.md-reader-theme-animating .md-reader-content,
+html.md-reader-theme-animating .md-reader-sidebar,
+html.md-reader-theme-animating .md-reader-window-chrome {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  html.md-reader-theme-animating,
+  html.md-reader-theme-animating body,
+  html.md-reader-theme-animating .md-reader,
+  html.md-reader-theme-animating .md-reader-toolbar,
+  html.md-reader-theme-animating .md-reader-tabs-host,
+  html.md-reader-theme-animating .md-reader-content,
+  html.md-reader-theme-animating .md-reader-sidebar,
+  html.md-reader-theme-animating .md-reader-window-chrome {
+    transition: none !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

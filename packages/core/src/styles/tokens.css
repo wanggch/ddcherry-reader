@@ -1,0 +1,66 @@
+/* ============================================================
+   Design tokens — primitive + shared component structure
+   Themes only override color semantics (see themes.css).
+   ============================================================ */
+
+:root {
+  /* Spacing scale */
+  --md-reader-space-1: 4px;
+  --md-reader-space-2: 8px;
+  --md-reader-space-3: 12px;
+  --md-reader-space-4: 16px;
+  --md-reader-space-5: 20px;
+  --md-reader-space-6: 24px;
+  --md-reader-space-8: 32px;
+  --md-reader-space-10: 40px;
+
+  /* Radius / motion / elevation (shared, not per-theme) */
+  --md-reader-radius: 10px;
+  --md-reader-radius-sm: 6px;
+  --md-reader-transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  --md-reader-shadow: 0 1px 3px rgba(31, 35, 40, 0.04), 0 8px 24px rgba(31, 35, 40, 0.08);
+  --md-reader-shadow-lg: 0 4px 12px rgba(31, 35, 40, 0.08), 0 16px 48px rgba(31, 35, 40, 0.12);
+
+  /* Chrome geometry */
+  --md-reader-toolbar-height: 44px;
+  --md-reader-tab-height: 34px;
+  --md-reader-chrome-height: var(--md-reader-toolbar-height);
+  --md-reader-sidebar-width: minmax(260px, 320px);
+  --md-reader-content-measure: 42rem;
+  --md-reader-content-leading: 1.75;
+  --md-reader-font-size: 16px;
+
+  /* Font stacks — UI / Reading / Mono */
+  --md-reader-font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --md-reader-font-reading: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --md-reader-font-mono: "JetBrains Mono", "SF Mono", "Cascadia Code", "Roboto Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  /* Legacy aliases used across components */
+  --md-reader-font-body: var(--md-reader-font-reading);
+
+  /* Default semantic colors (light) — themes override */
+  --md-reader-bg: #f4f6f8;
+  --md-reader-panel: #ffffff;
+  --md-reader-border: #d8dee4;
+  --md-reader-border-subtle: #e8ecf0;
+  --md-reader-text: #1f2328;
+  --md-reader-muted: #59636e;
+  --md-reader-accent: #0969da;
+  --md-reader-accent-soft: rgba(9, 105, 218, 0.08);
+  --md-reader-toolbar: rgba(255, 255, 255, 0.88);
+  --md-reader-code-bg: #f6f8fa;
+  --md-reader-code-border: var(--md-reader-border);
+  --md-reader-inline-code-bg: rgba(175, 184, 193, 0.2);
+  --md-reader-danger: #d1242f;
+  --md-reader-success: #1a7f37;
+  --md-reader-warning: #9a6700;
+  --md-reader-info: #0969da;
+  --md-reader-selection: rgba(9, 105, 218, 0.18);
+}
+
+/* Desktop multi-chrome: tabs + toolbar */
+html[data-md-reader-density='desktop'] {
+  --md-reader-toolbar-height: 40px;
+  --md-reader-tab-height: 34px;
+  --md-reader-chrome-height: calc(var(--md-reader-tab-height) + var(--md-reader-toolbar-height));
+}

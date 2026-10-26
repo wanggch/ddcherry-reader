@@ -1,0 +1,144 @@
+/* ============================================================
+   Code blocks — token-driven, no per-theme !important matrix
+   ============================================================ */
+
+.md-reader-content pre {
+  position: relative;
+  margin: 1.15em 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--md-reader-code-bg) !important; /* override github-markdown defaults */
+  border: 1px solid var(--md-reader-code-border) !important;
+  border-radius: var(--md-reader-radius-sm);
+  color: var(--md-reader-text) !important;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--md-reader-panel) 55%, transparent);
+}
+
+.md-reader-content :not(pre) > code {
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background: var(--md-reader-inline-code-bg) !important;
+  color: var(--md-reader-text) !important;
+  font-size: 0.9em;
+  border: none;
+}
+
+.md-reader-content h1 code,
+.md-reader-content h2 code,
+.md-reader-content h3 code,
+.md-reader-content h4 code,
+.md-reader-content h5 code,
+.md-reader-content h6 code {
+  background: var(--md-reader-inline-code-bg) !important;
+  color: var(--md-reader-text) !important;
+  font-size: 0.88em;
+}
+
+.md-reader-code-wrapper {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  overflow-x: auto;
+}
+
+.md-reader-code-line-numbers {
+  display: grid;
+  flex-shrink: 0;
+  align-content: start;
+  min-width: 22px;
+  padding-right: 12px;
+  border-right: 1px solid var(--md-reader-code-border);
+  color: var(--md-reader-muted);
+  font-size: 12.5px;
+  line-height: 1.7;
+  text-align: right;
+  user-select: none;
+  font-family: var(--md-reader-font-mono);
+}
+
+.md-reader-code-line-numbers span {
+  display: block;
+  opacity: 0.45;
+}
+
+.md-reader-content pre code,
+.md-reader-content pre code.hljs,
+.md-reader-content pre tt,
+.md-reader-content .hljs {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  background: transparent !important;
+  border: none;
+  font-size: 13px;
+  line-height: 1.7;
+  overflow-wrap: normal;
+  white-space: pre;
+  color: inherit;
+  font-family: var(--md-reader-font-mono);
+}
+
+.md-reader-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--md-reader-code-border);
+  border-radius: var(--md-reader-radius-sm);
+  background: color-mix(in srgb, var(--md-reader-panel) 82%, transparent);
+  color: var(--md-reader-muted);
+  cursor: pointer;
+  opacity: 0;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: all var(--md-reader-transition);
+}
+
+.md-reader-content pre:hover .md-reader-copy-btn,
+.md-reader-copy-btn:focus-visible {
+  opacity: 0.9;
+}
+
+.md-reader-copy-btn:hover {
+  opacity: 1;
+  border-color: var(--md-reader-accent);
+  color: var(--md-reader-accent);
+  background: var(--md-reader-accent-soft);
+}
+
+.md-reader-copy-btn--copied {
+  border-color: var(--md-reader-success) !important;
+  color: var(--md-reader-success) !important;
+  background: color-mix(in srgb, var(--md-reader-success) 12%, transparent) !important;
+  opacity: 1 !important;
+}
+
+.md-reader-code-lang {
+  position: absolute;
+  top: 8px;
+  right: 40px;
+  z-index: 1;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--md-reader-panel) 80%, transparent);
+  color: var(--md-reader-muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--md-reader-font-ui);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-reader-transition);
+}
+
+.md-reader-content pre:hover .md-reader-code-lang {
+  opacity: 0.75;
+}

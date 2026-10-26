@@ -1,0 +1,57 @@
+/* ============================================================
+   Print
+   ============================================================ */
+
+@media print {
+  .md-reader-toolbar,
+  .md-reader-sidebar,
+  .md-reader-progress,
+  .md-reader-lightbox,
+  #md-reader-loader,
+  .md-reader-copy-btn,
+  .md-reader-code-lang,
+  .md-reader-tabs-host,
+  .md-reader-settings-panel {
+    display: none !important;
+  }
+
+  .md-reader-shell {
+    display: block;
+    width: auto;
+    margin: 0;
+  }
+
+  .md-reader-content {
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    max-width: none;
+  }
+
+  .md-reader-content pre,
+  .md-reader-content table,
+  .md-reader-content img,
+  .md-reader-content .mermaid,
+  .md-reader-content blockquote {
+    page-break-inside: avoid;
+  }
+
+  .md-reader-content h1,
+  .md-reader-content h2,
+  .md-reader-content h3,
+  .md-reader-content h4 {
+    page-break-after: avoid;
+  }
+
+  .md-reader-content p {
+    orphans: 3;
+    widows: 3;
+  }
+
+  .md-reader-content tr,
+  .md-reader-content li {
+    page-break-inside: avoid;
+  }
+}
