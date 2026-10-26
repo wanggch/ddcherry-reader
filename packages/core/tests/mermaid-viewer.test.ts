@@ -38,6 +38,42 @@ describe('enhanceMermaidDiagrams', () => {
     expect(viewer?.querySelector('.md-reader-mermaid-viewer__canvas')?.innerHTML).toBe('');
   });
 
+  it('releases Mermaid inline max-width on the fullscreen clone so the diagram can grow', () => {
+    document.body.innerHTML = `
+      <div id="root">
+        <div class="mermaid" data-processed="true">
+          <svg viewBox="0 0 240 80" width="100%" style="max-width: 240px;"><text>Small</text></svg>
+        </div>
+        <div class="mermaid" data-processed="true">
+          <svg viewBox="0 0 180 90" width="100%" style="max-width: 180px;"><text>Other</text></svg>
+        </div>
+      </div>
+    `;
+
+    const root = document.getElementById('root');
+    if (!root) throw new Error('root not found');
+
+    enhanceMermaidDiagrams(root);
+
+    const buttons = root.querySelectorAll('.md-reader-mermaid-zoom');
+    (buttons[0] as HTMLElement).click();
+
+    const viewerSvg = root.querySelector('.md-reader-mermaid-viewer__diagram > svg') as SVGSVGElement | null;
+    expect(viewerSvg?.getAttribute('viewBox')).toBe('0 0 240 80');
+    expect(viewerSvg?.style.maxWidth).toBe('');
+    expect(viewerSvg?.getAttribute('style') ?? '').not.toMatch(/max-width:\s*240px/);
+
+    const inlineSvgs = root.querySelectorAll('.md-reader-mermaid-frame > .mermaid > svg');
+    expect((inlineSvgs[0] as SVGSVGElement).style.maxWidth).toBe('240px');
+    expect((inlineSvgs[1] as SVGSVGElement).style.maxWidth).toBe('180px');
+
+    root.querySelector('.md-reader-mermaid-viewer__close')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect((inlineSvgs[0] as SVGSVGElement).style.maxWidth).toBe('240px');
+    expect((inlineSvgs[1] as SVGSVGElement).style.maxWidth).toBe('180px');
+    expect(root.querySelector('.md-reader-mermaid-viewer__diagram > svg')).toBeNull();
+  });
+
   it('is idempotent and skips failed Mermaid diagrams', () => {
     document.body.innerHTML = `
       <div id="root">

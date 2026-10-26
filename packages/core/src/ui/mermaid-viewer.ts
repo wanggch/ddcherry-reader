@@ -43,11 +43,24 @@ function openMermaidViewer(root: Document | Element, diagram: Element): void {
 
   clone.classList.add('md-reader-mermaid-viewer__diagram');
   clone.removeAttribute('id');
+  // Mermaid's useMaxWidth writes style="max-width: <intrinsic>px" on the SVG.
+  // That inline value beats the viewer stylesheet, so the clone stays at the
+  // inline size. Drop it on the clone only; the inline diagram is untouched.
+  releaseMermaidFullscreenSize(clone);
 
   canvas?.replaceChildren(clone);
   viewer.hidden = false;
   viewer.setAttribute('aria-hidden', 'false');
   (viewer.querySelector('.md-reader-mermaid-viewer__close') as HTMLElement | null)?.focus();
+}
+
+function releaseMermaidFullscreenSize(diagram: HTMLElement): void {
+  const direct = [...diagram.querySelectorAll(':scope > svg')];
+  const svgs = direct.length > 0 ? direct : [...diagram.querySelectorAll('svg')].slice(0, 1);
+
+  svgs.forEach((svg) => {
+    svg.style.removeProperty('max-width');
+  });
 }
 
 function ensureMermaidViewer(root: Document | Element): HTMLElement {
