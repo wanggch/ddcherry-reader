@@ -55,8 +55,8 @@ function openMermaidViewer(root: Document | Element, diagram: Element): void {
 }
 
 function releaseMermaidFullscreenSize(diagram: HTMLElement): void {
-  const direct = [...diagram.querySelectorAll(':scope > svg')];
-  const svgs = direct.length > 0 ? direct : [...diagram.querySelectorAll('svg')].slice(0, 1);
+  const direct = [...diagram.querySelectorAll<SVGElement>(':scope > svg')];
+  const svgs = direct.length > 0 ? direct : [...diagram.querySelectorAll<SVGElement>('svg')].slice(0, 1);
 
   svgs.forEach((svg) => {
     svg.style.removeProperty('max-width');
